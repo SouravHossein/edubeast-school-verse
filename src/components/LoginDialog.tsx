@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { User, Lock, Mail, GraduationCap, Users, BookOpen, Shield } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface LoginDialogProps {
   isOpen: boolean;
@@ -46,6 +48,7 @@ const roleConfig = {
 
 export const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, role }) => {
   const [activeTab, setActiveTab] = useState('login');
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -53,6 +56,9 @@ export const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, role 
     fullName: '',
     studentId: '',
   });
+  
+  const { login, register } = useAuth();
+  const navigate = useNavigate();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
@@ -61,11 +67,36 @@ export const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, role 
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement authentication logic
-    console.log('Login/Signup attempt:', { role, activeTab, formData });
-    onClose();
+    if (!role) return;
+    
+    setIsLoading(true);
+    
+    try {
+      let success = false;
+      
+      if (activeTab === 'login') {
+        success = await login(formData.email, formData.password, role);
+      } else {
+        success = await register({
+          fullName: formData.fullName,
+          email: formData.email,
+          password: formData.password,
+          role,
+          studentId: formData.studentId,
+        });
+      }
+      
+      if (success) {
+        onClose();
+        navigate('/dashboard');
+      }
+    } catch (error) {
+      console.error('Authentication error:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   if (!role) return null;
@@ -138,8 +169,8 @@ export const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, role 
                   </div>
                 </CardContent>
                 <CardFooter className="flex flex-col space-y-2">
-                  <Button type="submit" className="w-full transition-smooth">
-                    Sign In as {role.charAt(0).toUpperCase() + role.slice(1)}
+                  <Button type="submit" className="w-full transition-smooth" disabled={isLoading}>
+                    {isLoading ? 'Signing In...' : `Sign In as ${role.charAt(0).toUpperCase() + role.slice(1)}`}
                   </Button>
                   <Button variant="link" size="sm">
                     Forgot your password?
@@ -239,8 +270,8 @@ export const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, role 
                   </div>
                 </CardContent>
                 <CardFooter>
-                  <Button type="submit" className="w-full transition-smooth">
-                    Create {role.charAt(0).toUpperCase() + role.slice(1)} Account
+                  <Button type="submit" className="w-full transition-smooth" disabled={isLoading}>
+                    {isLoading ? 'Creating Account...' : `Create ${role.charAt(0).toUpperCase() + role.slice(1)} Account`}
                   </Button>
                 </CardFooter>
               </form>
