@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -9,6 +10,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
+import StudentManagement from "./pages/students/StudentManagement";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +32,7 @@ const App = () => (
                     <DashboardLayout>
                       <Routes>
                         <Route index element={<Dashboard />} />
+                        <Route path="students" element={<StudentManagement />} />
                         <Route path="*" element={<Dashboard />} />
                       </Routes>
                     </DashboardLayout>
