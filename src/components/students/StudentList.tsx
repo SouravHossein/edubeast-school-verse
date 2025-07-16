@@ -67,12 +67,12 @@ export const StudentList = () => {
   });
 
   const getStatusBadge = (status: string) => {
-    const variants = {
+    const variants: Record<string, "default" | "secondary" | "outline" | "destructive"> = {
       active: 'default',
       inactive: 'secondary',
       graduated: 'outline'
     };
-    return <Badge variant={variants[status as keyof typeof variants]}>{status}</Badge>;
+    return <Badge variant={variants[status] || 'default'}>{status}</Badge>;
   };
 
   return (

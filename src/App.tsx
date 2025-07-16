@@ -11,6 +11,7 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import StudentManagement from "./pages/students/StudentManagement";
+import TeacherManagement from "./pages/teachers/TeacherManagement";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,6 +34,7 @@ const App = () => (
                       <Routes>
                         <Route index element={<Dashboard />} />
                         <Route path="students" element={<StudentManagement />} />
+                        <Route path="teachers" element={<TeacherManagement />} />
                         <Route path="*" element={<Dashboard />} />
                       </Routes>
                     </DashboardLayout>
