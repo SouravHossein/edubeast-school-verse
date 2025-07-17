@@ -12,6 +12,7 @@ import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import StudentManagement from "./pages/students/StudentManagement";
 import TeacherManagement from "./pages/teachers/TeacherManagement";
+import AttendanceManagement from "./pages/attendance/AttendanceManagement";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -35,6 +36,7 @@ const App = () => (
                         <Route index element={<Dashboard />} />
                         <Route path="students" element={<StudentManagement />} />
                         <Route path="teachers" element={<TeacherManagement />} />
+                        <Route path="attendance" element={<AttendanceManagement />} />
                         <Route path="*" element={<Dashboard />} />
                       </Routes>
                     </DashboardLayout>
