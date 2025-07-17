@@ -13,6 +13,7 @@ import Dashboard from "./pages/Dashboard";
 import StudentManagement from "./pages/students/StudentManagement";
 import TeacherManagement from "./pages/teachers/TeacherManagement";
 import AttendanceManagement from "./pages/attendance/AttendanceManagement";
+import ClassTimetableManagement from "./pages/classes/ClassTimetableManagement";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -37,6 +38,7 @@ const App = () => (
                         <Route path="students" element={<StudentManagement />} />
                         <Route path="teachers" element={<TeacherManagement />} />
                         <Route path="attendance" element={<AttendanceManagement />} />
+                        <Route path="classes" element={<ClassTimetableManagement />} />
                         <Route path="*" element={<Dashboard />} />
                       </Routes>
                     </DashboardLayout>
