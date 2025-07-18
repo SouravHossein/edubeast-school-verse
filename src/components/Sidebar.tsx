@@ -47,6 +47,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed = false }) => {
           ...baseItems,
           { icon: Users, label: 'Student Management', path: '/dashboard/students' },
           { icon: GraduationCap, label: 'Teacher Management', path: '/dashboard/teachers' },
+          { icon: UserCheck, label: 'User Approvals', path: '/dashboard/approvals' },
           { icon: Building, label: 'Staff Management', path: '/dashboard/staff' },
           { icon: BookOpen, label: 'Class Management', path: '/dashboard/classes' },
           { icon: Calendar, label: 'Timetable', path: '/dashboard/timetable' },

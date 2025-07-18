@@ -14,8 +14,9 @@ export const Navigation = () => {
   };
 
   const navItems = [
-    { name: 'Home', href: '#home' },
-    { name: 'Features', href: '#features' },
+    { name: 'Home', href: '/' },
+    { name: 'Gallery', href: '/gallery' },
+    { name: 'Apply', href: '/apply' },
     { name: 'About', href: '#about' },
     { name: 'Contact', href: '#contact' },
   ];
