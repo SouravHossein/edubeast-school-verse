@@ -50,10 +50,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed = false }) => {
           { icon: Building, label: 'Staff Management', path: '/dashboard/staff' },
           { icon: BookOpen, label: 'Class Management', path: '/dashboard/classes' },
           { icon: Calendar, label: 'Timetable', path: '/dashboard/timetable' },
-          { icon: FileText, label: 'Exams & Results', path: '/dashboard/exams' },
+          { icon: FileText, label: 'Exams & Results', path: '/dashboard/examinations' },
           { icon: DollarSign, label: 'Fee Management', path: '/dashboard/fees', feature: 'feeManagement' },
           { icon: Clock, label: 'Attendance', path: '/dashboard/attendance', feature: 'attendanceManagement' },
-          { icon: MessageSquare, label: 'Communications', path: '/dashboard/messages', feature: 'messagingSystem' },
+          { icon: MessageSquare, label: 'Communications', path: '/dashboard/communications', feature: 'messagingSystem' },
           { icon: Library, label: 'Library', path: '/dashboard/library', feature: 'libraryManagement' },
           { icon: Bus, label: 'Transport', path: '/dashboard/transport', feature: 'transportManagement' },
           { icon: Bed, label: 'Hostel', path: '/dashboard/hostel', feature: 'hostelManagement' },
@@ -72,7 +72,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed = false }) => {
           { icon: FileText, label: 'Assignments', path: '/dashboard/assignments' },
           { icon: ClipboardList, label: 'Gradebook', path: '/dashboard/grades' },
           { icon: Clock, label: 'Attendance', path: '/dashboard/attendance', feature: 'attendanceManagement' },
-          { icon: MessageSquare, label: 'Messages', path: '/dashboard/messages', feature: 'messagingSystem' },
+          { icon: MessageSquare, label: 'Communications', path: '/dashboard/communications', feature: 'messagingSystem' },
           { icon: BarChart, label: 'Reports', path: '/dashboard/reports' },
         ];
 
@@ -84,7 +84,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed = false }) => {
           { icon: FileText, label: 'Assignments', path: '/dashboard/assignments' },
           { icon: ClipboardList, label: 'Grades', path: '/dashboard/grades' },
           { icon: Clock, label: 'Attendance', path: '/dashboard/attendance', feature: 'attendanceManagement' },
-          { icon: MessageSquare, label: 'Messages', path: '/dashboard/messages', feature: 'messagingSystem' },
+          { icon: MessageSquare, label: 'Messages', path: '/dashboard/communications', feature: 'messagingSystem' },
           { icon: Library, label: 'Library', path: '/dashboard/library', feature: 'libraryManagement' },
           { icon: DollarSign, label: 'Fees', path: '/dashboard/fees', feature: 'feeManagement' },
         ];
@@ -96,7 +96,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed = false }) => {
           { icon: ClipboardList, label: 'Grades & Reports', path: '/dashboard/grades' },
           { icon: Clock, label: 'Attendance', path: '/dashboard/attendance', feature: 'attendanceManagement' },
           { icon: FileText, label: 'Assignments', path: '/dashboard/assignments' },
-          { icon: MessageSquare, label: 'Messages', path: '/dashboard/messages', feature: 'messagingSystem' },
+          { icon: MessageSquare, label: 'Communications', path: '/dashboard/communications', feature: 'messagingSystem' },
           { icon: DollarSign, label: 'Fee Payments', path: '/dashboard/fees', feature: 'feeManagement' },
           { icon: Calendar, label: 'Events', path: '/dashboard/events', feature: 'eventManagement' },
         ];
