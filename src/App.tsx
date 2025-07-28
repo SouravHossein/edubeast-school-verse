@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -21,6 +22,10 @@ import CommunicationHub from "./pages/communications/CommunicationHub";
 import { PublicGallery } from "./pages/public/PublicGallery";
 import { ApplicationForm } from "./pages/public/ApplicationForm";
 import { UserApprovals } from "./pages/admin/UserApprovals";
+import BlogListing from "./pages/blog/BlogListing";
+import BlogPost from "./pages/blog/BlogPost";
+import BlogDashboard from "./pages/blog/BlogDashboard";
+import AuthorProfile from "./pages/blog/AuthorProfile";
 
 const queryClient = new QueryClient();
 
@@ -37,6 +42,9 @@ const App = () => (
                 <Route path="/" element={<Index />} />
                 <Route path="/gallery" element={<PublicGallery />} />
                 <Route path="/apply" element={<ApplicationForm />} />
+                <Route path="/blog" element={<BlogListing />} />
+                <Route path="/blog/:slug" element={<BlogPost />} />
+                <Route path="/author/:authorId" element={<AuthorProfile />} />
                 <Route 
                   path="/dashboard/*" 
                   element={
@@ -51,6 +59,7 @@ const App = () => (
                           <Route path="examinations" element={<ExaminationManagement />} />
                           <Route path="fees" element={<FeeManagement />} />
                           <Route path="communications" element={<CommunicationHub />} />
+                          <Route path="blog" element={<BlogDashboard />} />
                           <Route 
                             path="approvals" 
                             element={

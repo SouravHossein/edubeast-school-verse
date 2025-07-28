@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -23,7 +24,8 @@ import {
   Library,
   Award,
   Heart,
-  LogOut
+  LogOut,
+  Edit3
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -55,6 +57,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed = false }) => {
           { icon: DollarSign, label: 'Fee Management', path: '/dashboard/fees', feature: 'feeManagement' },
           { icon: Clock, label: 'Attendance', path: '/dashboard/attendance', feature: 'attendanceManagement' },
           { icon: MessageSquare, label: 'Communications', path: '/dashboard/communications', feature: 'messagingSystem' },
+          { icon: Edit3, label: 'Blog Management', path: '/dashboard/blog' },
           { icon: Library, label: 'Library', path: '/dashboard/library', feature: 'libraryManagement' },
           { icon: Bus, label: 'Transport', path: '/dashboard/transport', feature: 'transportManagement' },
           { icon: Bed, label: 'Hostel', path: '/dashboard/hostel', feature: 'hostelManagement' },
@@ -74,6 +77,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed = false }) => {
           { icon: ClipboardList, label: 'Gradebook', path: '/dashboard/grades' },
           { icon: Clock, label: 'Attendance', path: '/dashboard/attendance', feature: 'attendanceManagement' },
           { icon: MessageSquare, label: 'Communications', path: '/dashboard/communications', feature: 'messagingSystem' },
+          { icon: Edit3, label: 'Blog Posts', path: '/dashboard/blog' },
           { icon: BarChart, label: 'Reports', path: '/dashboard/reports' },
         ];
 
@@ -86,6 +90,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed = false }) => {
           { icon: ClipboardList, label: 'Grades', path: '/dashboard/grades' },
           { icon: Clock, label: 'Attendance', path: '/dashboard/attendance', feature: 'attendanceManagement' },
           { icon: MessageSquare, label: 'Messages', path: '/dashboard/communications', feature: 'messagingSystem' },
+          { icon: Edit3, label: 'Blog Posts', path: '/dashboard/blog' },
           { icon: Library, label: 'Library', path: '/dashboard/library', feature: 'libraryManagement' },
           { icon: DollarSign, label: 'Fees', path: '/dashboard/fees', feature: 'feeManagement' },
         ];
