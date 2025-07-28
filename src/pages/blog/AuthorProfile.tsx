@@ -1,26 +1,23 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
-import { Calendar, Eye, MessageSquare, ExternalLink, Mail, Twitter, Linkedin } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { format } from 'date-fns';
+import { Calendar, Clock, Eye, MapPin, Link2, Mail, Twitter, Linkedin } from 'lucide-react';
+import { Navigation } from '@/components/Navigation';
 
-interface AuthorProfile {
+interface Author {
   id: string;
   display_name: string;
-  bio: string;
   avatar_url: string;
+  bio: string;
   social_links: {
     twitter?: string;
     linkedin?: string;
     website?: string;
+    email?: string;
   };
   post_count: number;
   created_at: string;
@@ -32,72 +29,102 @@ interface BlogPost {
   slug: string;
   excerpt: string;
   featured_image: string;
-  view_count: number;
-  reading_time: number;
   published_at: string;
-  blog_categories: {
+  reading_time: number;
+  view_count: number;
+  category: {
     name: string;
     slug: string;
   };
-  blog_post_tags: {
-    blog_tags: {
-      name: string;
-      slug: string;
-    };
-  }[];
+  tags: string[];
 }
 
-const AuthorProfile: React.FC = () => {
+export const AuthorProfile: React.FC = () => {
   const { authorId } = useParams<{ authorId: string }>();
+  const [author, setAuthor] = useState<Author | null>(null);
+  const [posts, setPosts] = useState<BlogPost[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Fetch author profile
-  const { data: author, isLoading } = useQuery({
-    queryKey: ['author-profile', authorId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('author_profiles')
-        .select('*')
-        .eq('id', authorId)
-        .single();
+  useEffect(() => {
+    // Mock data for demonstration
+    const mockAuthor: Author = {
+      id: '1',
+      display_name: 'John Smith',
+      avatar_url: '/placeholder.svg',
+      bio: 'Principal at EduBeast School with over 15 years of experience in education. Passionate about innovative teaching methods and student development.',
+      social_links: {
+        twitter: 'https://twitter.com/johnsmith',
+        linkedin: 'https://linkedin.com/in/johnsmith',
+        website: 'https://johnsmith.edu',
+        email: 'john.smith@edubeast.com',
+      },
+      post_count: 15,
+      created_at: '2023-01-01T00:00:00Z',
+    };
 
-      if (error) throw error;
-      return data as AuthorProfile;
-    },
-  });
+    const mockPosts: BlogPost[] = [
+      {
+        id: '1',
+        title: 'Welcome to Our New School Blog',
+        slug: 'welcome-to-our-new-school-blog',
+        excerpt: 'We are excited to launch our new school blog where students, teachers, and parents can share their experiences and insights.',
+        featured_image: '/placeholder.svg',
+        published_at: '2024-01-15T10:00:00Z',
+        reading_time: 5,
+        view_count: 150,
+        category: {
+          name: 'News',
+          slug: 'news',
+        },
+        tags: ['announcement', 'school', 'community'],
+      },
+      {
+        id: '2',
+        title: 'The Future of Education Technology',
+        slug: 'future-of-education-technology',
+        excerpt: 'Exploring how technology is transforming the educational landscape and what it means for students and teachers.',
+        featured_image: '/placeholder.svg',
+        published_at: '2024-01-10T09:00:00Z',
+        reading_time: 8,
+        view_count: 89,
+        category: {
+          name: 'Technology',
+          slug: 'technology',
+        },
+        tags: ['technology', 'education', 'innovation'],
+      },
+      {
+        id: '3',
+        title: 'Building Strong School Communities',
+        slug: 'building-strong-school-communities',
+        excerpt: 'How schools can foster stronger connections between students, parents, and teachers.',
+        featured_image: '/placeholder.svg',
+        published_at: '2024-01-05T11:30:00Z',
+        reading_time: 6,
+        view_count: 120,
+        category: {
+          name: 'Community',
+          slug: 'community',
+        },
+        tags: ['community', 'engagement', 'collaboration'],
+      },
+    ];
 
-  // Fetch author's posts
-  const { data: posts } = useQuery({
-    queryKey: ['author-posts', authorId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('blog_posts')
-        .select(`
-          *,
-          blog_categories(name, slug),
-          blog_post_tags(blog_tags(name, slug))
-        `)
-        .eq('author_id', authorId)
-        .eq('status', 'published')
-        .order('published_at', { ascending: false });
-
-      if (error) throw error;
-      return data as BlogPost[];
-    },
-    enabled: !!authorId,
-  });
-
-  // Calculate stats
-  const totalViews = posts?.reduce((sum, post) => sum + (post.view_count || 0), 0) || 0;
-  const categories = Array.from(new Set(posts?.map(post => post.blog_categories?.name).filter(Boolean))) || [];
+    setAuthor(mockAuthor);
+    setPosts(mockPosts);
+    setIsLoading(false);
+  }, [authorId]);
 
   if (isLoading) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="animate-pulse">
-          <div className="h-32 bg-muted rounded mb-6"></div>
-          <div className="space-y-4">
-            <div className="h-6 bg-muted rounded w-1/3"></div>
-            <div className="h-4 bg-muted rounded w-2/3"></div>
+      <div className="min-h-screen bg-background">
+        <Navigation />
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+              <p className="text-muted-foreground">Loading author profile...</p>
+            </div>
           </div>
         </div>
       </div>
@@ -106,174 +133,146 @@ const AuthorProfile: React.FC = () => {
 
   if (!author) {
     return (
-      <div className="container mx-auto px-4 py-8 text-center">
-        <h1 className="text-2xl font-bold mb-4">Author Not Found</h1>
-        <Link to="/blog" className="text-primary hover:underline">
-          ← Back to Blog
-        </Link>
+      <div className="min-h-screen bg-background">
+        <Navigation />
+        <div className="container mx-auto px-4 py-8">
+          <div className="text-center">
+            <h1 className="text-4xl font-bold mb-4">Author Not Found</h1>
+            <p className="text-muted-foreground">The author profile you're looking for doesn't exist.</p>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-background">
+      <Navigation />
+      
       <div className="container mx-auto px-4 py-8">
-        <div className="grid lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Author Info Sidebar */}
           <div className="lg:col-span-1">
-            <Card>
+            <Card className="sticky top-6">
               <CardContent className="p-6">
                 <div className="text-center mb-6">
-                  <Avatar className="h-24 w-24 mx-auto mb-4">
+                  <Avatar className="w-24 h-24 mx-auto mb-4">
                     <AvatarImage src={author.avatar_url} />
-                    <AvatarFallback className="text-lg">
-                      {author.display_name.charAt(0)}
-                    </AvatarFallback>
+                    <AvatarFallback className="text-2xl">{author.display_name[0]}</AvatarFallback>
                   </Avatar>
-                  <h1 className="text-2xl font-bold">{author.display_name}</h1>
-                  <p className="text-muted-foreground">Author</p>
-                </div>
-
-                {author.bio && (
-                  <div className="mb-6">
-                    <h3 className="font-semibold mb-2">About</h3>
-                    <p className="text-sm text-muted-foreground">{author.bio}</p>
-                  </div>
-                )}
-
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Total Posts</span>
-                    <span className="text-sm">{posts?.length || 0}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Total Views</span>
-                    <span className="text-sm">{totalViews}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Member Since</span>
-                    <span className="text-sm">
-                      {format(new Date(author.created_at), 'MMM yyyy')}
-                    </span>
+                  <h1 className="text-2xl font-bold mb-2">{author.display_name}</h1>
+                  <div className="flex items-center justify-center gap-2 text-muted-foreground mb-4">
+                    <Calendar className="w-4 h-4" />
+                    <span>Member since {new Date(author.created_at).getFullYear()}</span>
                   </div>
                 </div>
 
-                <Separator className="my-6" />
+                <p className="text-muted-foreground mb-6">{author.bio}</p>
+
+                {/* Stats */}
+                <div className="space-y-3 mb-6">
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Posts</span>
+                    <span className="font-medium">{author.post_count}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Total Views</span>
+                    <span className="font-medium">{posts.reduce((sum, post) => sum + post.view_count, 0)}</span>
+                  </div>
+                </div>
 
                 {/* Social Links */}
-                {author.social_links && (
-                  <div className="space-y-3">
-                    <h3 className="font-semibold">Connect</h3>
-                    <div className="flex flex-col gap-2">
-                      {author.social_links.twitter && (
-                        <Button variant="outline" size="sm" asChild>
-                          <a href={author.social_links.twitter} target="_blank" rel="noopener noreferrer">
-                            <Twitter className="h-4 w-4 mr-2" />
-                            Twitter
-                          </a>
-                        </Button>
-                      )}
-                      {author.social_links.linkedin && (
-                        <Button variant="outline" size="sm" asChild>
-                          <a href={author.social_links.linkedin} target="_blank" rel="noopener noreferrer">
-                            <Linkedin className="h-4 w-4 mr-2" />
-                            LinkedIn
-                          </a>
-                        </Button>
-                      )}
-                      {author.social_links.website && (
-                        <Button variant="outline" size="sm" asChild>
-                          <a href={author.social_links.website} target="_blank" rel="noopener noreferrer">
-                            <ExternalLink className="h-4 w-4 mr-2" />
-                            Website
-                          </a>
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                <Separator className="my-6" />
-
-                {/* Categories */}
-                {categories.length > 0 && (
-                  <div>
-                    <h3 className="font-semibold mb-2">Categories</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {categories.map((category) => (
-                        <Badge key={category} variant="secondary" className="text-xs">
-                          {category}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                <div className="space-y-2">
+                  {author.social_links.email && (
+                    <Button variant="outline" size="sm" className="w-full justify-start">
+                      <Mail className="w-4 h-4 mr-2" />
+                      Email
+                    </Button>
+                  )}
+                  {author.social_links.twitter && (
+                    <Button variant="outline" size="sm" className="w-full justify-start">
+                      <Twitter className="w-4 h-4 mr-2" />
+                      Twitter
+                    </Button>
+                  )}
+                  {author.social_links.linkedin && (
+                    <Button variant="outline" size="sm" className="w-full justify-start">
+                      <Linkedin className="w-4 h-4 mr-2" />
+                      LinkedIn
+                    </Button>
+                  )}
+                  {author.social_links.website && (
+                    <Button variant="outline" size="sm" className="w-full justify-start">
+                      <Link2 className="w-4 h-4 mr-2" />
+                      Website
+                    </Button>
+                  )}
+                </div>
               </CardContent>
             </Card>
           </div>
 
           {/* Posts */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-3">
             <div className="mb-6">
-              <h2 className="text-2xl font-bold mb-2">Posts by {author.display_name}</h2>
+              <h2 className="text-3xl font-bold mb-2">Posts by {author.display_name}</h2>
               <p className="text-muted-foreground">
-                {posts?.length || 0} published articles
+                {posts.length} {posts.length === 1 ? 'post' : 'posts'} published
               </p>
             </div>
 
             <div className="space-y-6">
-              {posts?.map((post) => (
-                <Card key={post.id} className="overflow-hidden">
-                  <div className="flex">
-                    <div className="w-1/3">
-                      <img
-                        src={post.featured_image || '/placeholder.svg'}
-                        alt={post.title}
-                        className="w-full h-48 object-cover"
-                      />
-                    </div>
-                    <div className="w-2/3">
-                      <CardHeader className="pb-3">
+              {posts.map((post) => (
+                <Card key={post.id} className="hover:shadow-lg transition-shadow">
+                  <CardContent className="p-6">
+                    <div className="flex gap-6">
+                      <div className="flex-shrink-0">
+                        <img 
+                          src={post.featured_image} 
+                          alt={post.title}
+                          className="w-32 h-24 object-cover rounded-lg"
+                        />
+                      </div>
+                      <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
-                          <Badge variant="secondary">{post.blog_categories?.name}</Badge>
-                          {post.blog_post_tags?.slice(0, 2).map((tag, index) => (
-                            <Badge key={index} variant="outline" className="text-xs">
-                              {tag.blog_tags.name}
-                            </Badge>
-                          ))}
+                          <Badge variant="secondary">{post.category.name}</Badge>
+                          <span className="text-sm text-muted-foreground">•</span>
+                          <span className="text-sm text-muted-foreground">
+                            {new Date(post.published_at).toLocaleDateString()}
+                          </span>
                         </div>
-                        <Link to={`/blog/${post.slug}`} className="hover:text-primary">
-                          <h3 className="font-semibold text-lg line-clamp-2">{post.title}</h3>
-                        </Link>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-muted-foreground text-sm mb-4 line-clamp-3">
-                          {post.excerpt}
-                        </p>
-                        <div className="flex items-center justify-between text-sm text-muted-foreground">
-                          <div className="flex items-center gap-4">
+                        <h3 className="text-xl font-bold mb-2 hover:text-primary cursor-pointer">
+                          {post.title}
+                        </h3>
+                        <p className="text-muted-foreground mb-4 line-clamp-2">{post.excerpt}</p>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
                             <div className="flex items-center gap-1">
-                              <Calendar className="h-4 w-4" />
-                              <span>{format(new Date(post.published_at), 'MMM dd, yyyy')}</span>
+                              <Clock className="w-4 h-4" />
+                              <span>{post.reading_time} min read</span>
                             </div>
                             <div className="flex items-center gap-1">
-                              <Eye className="h-4 w-4" />
-                              <span>{post.view_count}</span>
+                              <Eye className="w-4 h-4" />
+                              <span>{post.view_count} views</span>
                             </div>
                           </div>
-                          <div className="flex items-center gap-1">
-                            <span>{post.reading_time} min read</span>
+                          <div className="flex flex-wrap gap-1">
+                            {post.tags.slice(0, 3).map((tag) => (
+                              <Badge key={tag} variant="outline" className="text-xs">
+                                {tag}
+                              </Badge>
+                            ))}
                           </div>
                         </div>
-                      </CardContent>
+                      </div>
                     </div>
-                  </div>
+                  </CardContent>
                 </Card>
               ))}
             </div>
 
-            {posts?.length === 0 && (
-              <div className="text-center py-8">
+            {posts.length === 0 && (
+              <div className="text-center py-12">
                 <p className="text-muted-foreground">No posts published yet.</p>
               </div>
             )}
