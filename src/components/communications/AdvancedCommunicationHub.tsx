@@ -409,7 +409,7 @@ export const AdvancedCommunicationHub: React.FC = () => {
                         </div>
                         <p className="text-sm text-muted-foreground truncate">{message.content}</p>
                         <p className="text-xs text-muted-foreground">
-                          {message.timestamp.toRelativeTimeString ? message.timestamp.toRelativeTimeString() : message.timestamp.toLocaleString()}
+                          {new Date(message.timestamp).toLocaleString()}
                         </p>
                       </div>
                     </div>

@@ -27,6 +27,8 @@ import BlogPost from "./pages/blog/BlogPost";
 import BlogDashboard from "./pages/blog/BlogDashboard";
 import AuthorProfile from "./pages/blog/AuthorProfile";
 import { ThemeProvider } from './contexts/ThemeContext';
+import { AdminAuthProvider } from './contexts/AdminAuthContext';
+import { AdminPortal } from './pages/admin/AdminPortal';
 
 
 const queryClient = new QueryClient();
@@ -36,7 +38,8 @@ const App = () => (
     <TooltipProvider>
       <SchoolConfigProvider>
         <ApprovalProvider>
-          <AuthProvider>
+          <AdminAuthProvider>
+            <AuthProvider>
             <Toaster />
             <Sonner />
             <BrowserRouter>
@@ -46,8 +49,9 @@ const App = () => (
                   <Route path="/gallery" element={<PublicGallery />} />
                   <Route path="/apply" element={<ApplicationForm />} />
                   <Route path="/blog" element={<BlogListing />} />
-                <Route path="/blog/:slug" element={<BlogPost />} />
-                <Route path="/author/:authorId" element={<AuthorProfile />} />
+                  <Route path="/blog/:slug" element={<BlogPost />} />
+                  <Route path="/author/:authorId" element={<AuthorProfile />} />
+                  <Route path="/admin-portal-xyz123" element={<AdminPortal />} />
                 <Route 
                   path="/dashboard/*" 
                   element={
@@ -82,7 +86,8 @@ const App = () => (
               </Routes>
               </ThemeProvider>
             </BrowserRouter>
-          </AuthProvider>
+            </AuthProvider>
+          </AdminAuthProvider>
         </ApprovalProvider>
       </SchoolConfigProvider>
     </TooltipProvider>
