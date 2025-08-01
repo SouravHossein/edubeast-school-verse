@@ -13,6 +13,7 @@ interface LoginDialogProps {
   isOpen: boolean;
   onClose: () => void;
   role: 'admin' | 'teacher' | 'student' | 'parent' | null;
+  setSelectedRole: (role: 'admin' | 'teacher' | 'student' | 'parent' | null) => void;
 }
 
 const roleConfig = {
@@ -46,7 +47,7 @@ const roleConfig = {
   },
 };
 
-export const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, role }) => {
+export const LoginDialog: React.FC<LoginDialogProps> = ({ setSelectedRole,isOpen, onClose, role }) => {
   const [activeTab, setActiveTab] = useState('login');
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -107,6 +108,20 @@ export const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, role 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
+        {/* Change role */}
+        <Tabs>
+          <TabsList className="flex justify-between">
+            <TabsTrigger value="student" onClick={() => setSelectedRole('student')}>
+              Student
+            </TabsTrigger>
+            <TabsTrigger value="teacher" onClick={() => setSelectedRole('teacher')}>
+              Teacher
+            </TabsTrigger>
+            <TabsTrigger value="parent" onClick={() =>  setSelectedRole('parent')}>
+              Parent
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
         <DialogHeader>
           <div className={`flex items-center space-x-3 p-4 rounded-lg ${config.bgColor} mb-4`}>
             <div className={`p-2 rounded-full bg-white shadow-soft`}>
@@ -118,6 +133,8 @@ export const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, role 
             </div>
           </div>
         </DialogHeader>
+
+        
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2">

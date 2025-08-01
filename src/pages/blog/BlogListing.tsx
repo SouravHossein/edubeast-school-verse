@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Search, Calendar, Clock, User, Tag, TrendingUp, Star } from 'lucide-react';
-import { Navigation } from '@/components/Navigation';
+import Navigation  from '@/components/Navigation';
 
 interface BlogPost {
   id: string;

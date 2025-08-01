@@ -26,6 +26,8 @@ import BlogListing from "./pages/blog/BlogListing";
 import BlogPost from "./pages/blog/BlogPost";
 import BlogDashboard from "./pages/blog/BlogDashboard";
 import AuthorProfile from "./pages/blog/AuthorProfile";
+import { ThemeProvider } from './contexts/ThemeContext';
+
 
 const queryClient = new QueryClient();
 
@@ -38,11 +40,12 @@ const App = () => (
             <Toaster />
             <Sonner />
             <BrowserRouter>
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/gallery" element={<PublicGallery />} />
-                <Route path="/apply" element={<ApplicationForm />} />
-                <Route path="/blog" element={<BlogListing />} />
+              <ThemeProvider>
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/gallery" element={<PublicGallery />} />
+                  <Route path="/apply" element={<ApplicationForm />} />
+                  <Route path="/blog" element={<BlogListing />} />
                 <Route path="/blog/:slug" element={<BlogPost />} />
                 <Route path="/author/:authorId" element={<AuthorProfile />} />
                 <Route 
@@ -77,6 +80,7 @@ const App = () => (
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
+              </ThemeProvider>
             </BrowserRouter>
           </AuthProvider>
         </ApprovalProvider>

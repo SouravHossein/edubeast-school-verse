@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Calendar, Clock, Eye, MapPin, Link2, Mail, Twitter, Linkedin } from 'lucide-react';
-import { Navigation } from '@/components/Navigation';
+import Navigation  from '@/components/Navigation';
 
 interface Author {
   id: string;

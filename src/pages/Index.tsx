@@ -1,315 +1,234 @@
-import React from 'react';
-import { Navigation } from '@/components/Navigation';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { 
-  Users, 
-  BookOpen, 
-  Calendar, 
-  BarChart, 
-  Shield, 
-  Smartphone,
-  CheckCircle,
-  Star,
-  GraduationCap,
-  ClipboardList,
-  MessageSquare,
-  FileText
-} from 'lucide-react';
-import heroImage from '@/assets/hero-image.jpg';
+import Navigation from '@/components/Navigation';
+import React, { useState, useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
+import * as THREE from 'three';
 
-const Index = () => {
-  const features = [
-    {
-      icon: Users,
-      title: 'Student Management',
-      description: 'Comprehensive student profiles, enrollment, and progress tracking',
-      color: 'text-green-600',
-      bgColor: 'bg-green-50'
-    },
-    {
-      icon: GraduationCap,
-      title: 'Teacher Portal',
-      description: 'Grade management, lesson planning, and class administration',
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50'
-    },
-    {
-      icon: Calendar,
-      title: 'Schedule Management',
-      description: 'Timetables, events, and automated scheduling system',
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-50'
-    },
-    {
-      icon: BarChart,
-      title: 'Analytics & Reports',
-      description: 'Detailed insights and customizable reporting tools',
-      color: 'text-orange-600',
-      bgColor: 'bg-orange-50'
-    },
-    {
-      icon: MessageSquare,
-      title: 'Communication Hub',
-      description: 'Parent-teacher messaging and school announcements',
-      color: 'text-pink-600',
-      bgColor: 'bg-pink-50'
-    },
-    {
-      icon: Shield,
-      title: 'Secure & Compliant',
-      description: 'Role-based access control and data protection',
-      color: 'text-red-600',
-      bgColor: 'bg-red-50'
+const FutureAcademy = () => {
+  const [scrollY, setScrollY] = useState(0);
+  const [isVisible, setIsVisible] = useState<{ [key: string]: boolean }>({});
+  const mountRef = useRef(null);
+  const sceneRef = useRef(null);
+
+  // Three.js Scene Setup
+  useEffect(() => {
+    if (!mountRef.current) return;
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, 400 / 300, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+    
+    renderer.setSize(400, 300);
+    renderer.setClearColor(0x000000, 0);
+    mountRef.current.appendChild(renderer.domElement);
+
+    // Create holographic book
+    const bookGeometry = new THREE.BoxGeometry(2, 2.5, 0.3);
+    const bookMaterial = new THREE.MeshPhongMaterial({
+      color: 0x16f4d0,
+      transparent: true,
+      opacity: 0.7,
+      emissive: 0x16f4d0,
+      emissiveIntensity: 0.2,
+    });
+    const book = new THREE.Mesh(bookGeometry, bookMaterial);
+
+    // Create pages
+    const pageGeometry = new THREE.PlaneGeometry(1.8, 2.3);
+    const pageMaterial = new THREE.MeshPhongMaterial({
+      color: 0xf4d03f,
+      transparent: true,
+      opacity: 0.3,
+      side: THREE.DoubleSide,
+    });
+
+    const pages = [];
+    for (let i = 0; i < 5; i++) {
+      const page = new THREE.Mesh(pageGeometry, pageMaterial);
+      page.position.set(0, 0, -0.1 + i * 0.05);
+      page.rotation.y = (i * Math.PI) / 10;
+      pages.push(page);
+      scene.add(page);
     }
-  ];
 
-  const benefits = [
-    'Streamlined administrative processes',
-    'Improved parent-teacher communication',
-    'Real-time academic progress tracking',
-    'Automated attendance management',
-    'Customizable grade book system',
-    'Mobile-responsive design'
-  ];
+    scene.add(book);
 
-  const stats = [
-    { number: '1000+', label: 'Schools Served' },
-    { number: '50k+', label: 'Active Students' },
-    { number: '5k+', label: 'Teachers' },
-    { number: '99.9%', label: 'Uptime' }
-  ];
+    // Lighting
+    const ambientLight = new THREE.AmbientLight(0x404040, 0.4);
+    scene.add(ambientLight);
+
+    const pointLight = new THREE.PointLight(0x16f4d0, 1, 100);
+    pointLight.position.set(5, 5, 5);
+    scene.add(pointLight);
+
+    const pointLight2 = new THREE.PointLight(0xf4d03f, 0.8, 100);
+    pointLight2.position.set(-5, -5, 5);
+    scene.add(pointLight2);
+
+    camera.position.z = 5;
+
+    // Animation
+    const animate = () => {
+      requestAnimationFrame(animate);
+
+      book.rotation.y += 0.01;
+      book.rotation.x = Math.sin(Date.now() * 0.001) * 0.2;
+
+      pages.forEach((page, index) => {
+        page.rotation.y += 0.005 * (index + 1);
+        page.position.y = Math.sin(Date.now() * 0.001 + index) * 0.1;
+      });
+
+      renderer.render(scene, camera);
+    };
+
+    animate();
+    sceneRef.current = { scene, camera, renderer, book, pages };
+
+    return () => {
+      if (mountRef.current && renderer.domElement) {
+        mountRef.current.removeChild(renderer.domElement);
+      }
+      renderer.dispose();
+    };
+  }, []);
+
+  // Scroll handler
+  useEffect(() => {
+    const handleScroll = () => setScrollY(window.scrollY);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Intersection Observer for animations
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          setIsVisible(prev => ({
+            ...prev,
+            [entry.target.id]: entry.isIntersecting
+          }));
+        });
+      },
+      { threshold: 0.1, rootMargin: '0px 0px -100px 0px' }
+    );
+
+    document.querySelectorAll('[data-animate]').forEach(el => observer.observe(el));
+    return () => observer.disconnect();
+  }, []);
+
+  // Counter animation hook
+  const useCounter = (target, isVisible) => {
+    const [count, setCount] = useState(0);
+    
+    useEffect(() => {
+      if (!isVisible) return;
+      
+      let start = 0;
+      const increment = target / 100;
+      const timer = setInterval(() => {
+        start += increment;
+        if (start >= target) {
+          start = target;
+          clearInterval(timer);
+        }
+        setCount(Math.floor(start));
+      }, 20);
+      
+      return () => clearInterval(timer);
+    }, [target, isVisible]);
+    
+    return count;
+  };
+
+  const StatCounter = ({ target, label, suffix = '+' }) => {
+    const count = useCounter(target, isVisible.stats);
+    return (
+      <div className="text-center">
+        <span className="block text-4xl md:text-5xl font-black bg-gradient-to-r from-teal-400 to-yellow-400 bg-clip-text text-transparent font-mono">
+          {count.toLocaleString()}{suffix}
+        </span>
+        <span className="text-lg opacity-80 mt-2 block">{label}</span>
+      </div>
+    );
+  };
+
+
+
+
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 text-white overflow-x-hidden relative">
+      {/* Animated Background */}
+      <div className="fixed inset-0 pointer-events-none opacity-30">
+        <div className="absolute w-32 h-32 bg-gradient-to-r from-teal-400 to-yellow-400 rounded-full blur-sm animate-pulse top-1/4 left-1/4" 
+             style={{
+               animation: 'float 6s ease-in-out infinite',
+               animationDelay: '0s'
+             }}></div>
+        <div className="absolute w-48 h-48 bg-gradient-to-r from-yellow-400 to-teal-400 rounded-full blur-sm animate-pulse top-3/5 right-1/4"
+             style={{
+               animation: 'float 6s ease-in-out infinite',
+               animationDelay: '2s'
+             }}></div>
+        <div className="absolute w-24 h-24 bg-gradient-to-r from-teal-400 to-yellow-400 rounded-full blur-sm animate-pulse bottom-1/3 left-1/5"
+             style={{
+               animation: 'float 6s ease-in-out infinite',
+               animationDelay: '4s'
+             }}></div>
+      </div>
+
+      {/* Floating Navigation */}
       <Navigation />
-      
+
       {/* Hero Section */}
-      <section id="home" className="pt-16 pb-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div className="space-y-8">
-              <div className="space-y-4">
-                <Badge variant="secondary" className="text-primary">
-                  Modern School Management System
-                </Badge>
-                <h1 className="text-4xl md:text-6xl font-bold text-foreground leading-tight">
-                  Welcome to{' '}
-                  <span className="text-primary">EduBeast</span>
-                </h1>
-                <p className="text-xl text-muted-foreground max-w-2xl">
-                  Empower your educational institution with our comprehensive, 
-                  modular school management platform designed for modern learning environments.
-                </p>
-              </div>
-              
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Button size="lg" className="text-lg px-8 transition-smooth shadow-medium hover:shadow-strong">
-                  Get Started Today
-                </Button>
-                <Button variant="outline" size="lg" className="text-lg px-8 transition-smooth">
-                  Schedule Demo
-                </Button>
-              </div>
-              
-              {/* Stats */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-8">
-                {stats.map((stat, index) => (
-                  <div key={index} className="text-center">
-                    <div className="text-2xl md:text-3xl font-bold text-primary">{stat.number}</div>
-                    <div className="text-sm text-muted-foreground">{stat.label}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-            
-            <div className="relative">
-              <div className="relative rounded-2xl overflow-hidden shadow-strong">
-                <img 
-                  src={heroImage} 
-                  alt="EduBeast School Management System"
-                  className="w-full h-auto object-cover"
-                />
-                <div className="absolute inset-0 hero-gradient opacity-10"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Features Section */}
-      <section id="features" className="py-20 px-4 sm:px-6 lg:px-8 bg-muted/30">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center space-y-4 mb-16">
-            <Badge variant="secondary" className="text-primary">
-              Powerful Features
-            </Badge>
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground">
-              Everything You Need for Modern Education
-            </h2>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              Our modular platform adapts to your school's unique needs with 
-              comprehensive tools for administration, teaching, and learning.
-            </p>
-          </div>
-          
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {features.map((feature, index) => {
-              const IconComponent = feature.icon;
-              return (
-                <Card key={index} className="card-gradient border-0 shadow-soft hover:shadow-medium transition-smooth group">
-                  <CardHeader>
-                    <div className={`w-12 h-12 rounded-lg ${feature.bgColor} flex items-center justify-center mb-4 group-hover:scale-110 transition-smooth`}>
-                      <IconComponent className={`w-6 h-6 ${feature.color}`} />
-                    </div>
-                    <CardTitle className="text-xl">{feature.title}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <CardDescription className="text-base">
-                      {feature.description}
-                    </CardDescription>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* Benefits Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
-            <div className="space-y-8">
-              <div className="space-y-4">
-                <Badge variant="secondary" className="text-primary">
-                  Why Choose EduBeast
-                </Badge>
-                <h2 className="text-3xl md:text-4xl font-bold text-foreground">
-                  Transforming Education Management
-                </h2>
-                <p className="text-lg text-muted-foreground">
-                  Join thousands of educators who trust EduBeast to streamline 
-                  their operations and enhance the learning experience.
-                </p>
-              </div>
-              
-              <div className="space-y-4">
-                {benefits.map((benefit, index) => (
-                  <div key={index} className="flex items-start space-x-3">
-                    <CheckCircle className="w-6 h-6 text-success mt-0.5 flex-shrink-0" />
-                    <span className="text-foreground font-medium">{benefit}</span>
-                  </div>
-                ))}
-              </div>
-              
-              <Button size="lg" className="transition-smooth">
-                Learn More About Our Features
-              </Button>
-            </div>
-            
-            <div className="space-y-6">
-              {/* Role Access Cards */}
-              <div className="grid grid-cols-2 gap-4">
-                <Card className="border-blue-200 bg-blue-50/50">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center space-x-2">
-                      <GraduationCap className="w-5 h-5 text-blue-600" />
-                      <CardTitle className="text-sm text-blue-800">Teachers</CardTitle>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-xs text-blue-700">Grade management & lesson planning</p>
-                  </CardContent>
-                </Card>
-                
-                <Card className="border-green-200 bg-green-50/50">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center space-x-2">
-                      <BookOpen className="w-5 h-5 text-green-600" />
-                      <CardTitle className="text-sm text-green-800">Students</CardTitle>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-xs text-green-700">Access courses & track progress</p>
-                  </CardContent>
-                </Card>
-                
-                <Card className="border-orange-200 bg-orange-50/50">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center space-x-2">
-                      <Users className="w-5 h-5 text-orange-600" />
-                      <CardTitle className="text-sm text-orange-800">Parents</CardTitle>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-xs text-orange-700">Monitor child's academic journey</p>
-                  </CardContent>
-                </Card>
-                
-                <Card className="border-purple-200 bg-purple-50/50">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center space-x-2">
-                      <Shield className="w-5 h-5 text-purple-600" />
-                      <CardTitle className="text-sm text-purple-800">Admin</CardTitle>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-xs text-purple-700">Complete school management control</p>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 hero-gradient">
-        <div className="max-w-4xl mx-auto text-center space-y-8 text-white">
-          <h2 className="text-3xl md:text-4xl font-bold">
-            Ready to Transform Your School?
-          </h2>
-          <p className="text-xl opacity-90 max-w-2xl mx-auto">
-            Join the educational revolution with EduBeast. Get started today 
-            and experience the difference modern school management can make.
+      <section id="home" className="min-h-screen flex items-center justify-center text-center relative overflow-hidden">
+        <div className="max-w-4xl z-10 px-6">
+          <h1 className="text-5xl md:text-7xl font-black mb-6 bg-gradient-to-r from-white via-teal-400 to-yellow-400 bg-clip-text text-transparent font-mono animate-pulse">
+            SHAPING FUTURE LEADERS
+          </h1>
+          <p className="text-xl md:text-2xl mb-12 opacity-90 font-light">
+            Where Innovation Meets Education in the Digital Age
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" variant="secondary" className="text-lg px-8">
-              Start Free Trial
-            </Button>
-            <Button size="lg" variant="outline" className="text-lg px-8 border-white text-white hover:bg-white hover:text-primary">
-              Contact Sales
-            </Button>
+          <div className="flex flex-col sm:flex-row gap-6 justify-center">
+            <a 
+              href="/apply"
+              className="px-10 py-4 bg-gradient-to-r from-teal-400 to-yellow-400 text-slate-900 rounded-full font-bold text-lg transition-all duration-300 hover:translate-y-[-5px] hover:shadow-2xl hover:shadow-teal-400/40"
+            >
+              Apply Now
+            </a>
+            <a 
+              href="/about"
+              className="px-10 py-4 bg-white/10 backdrop-blur-xl border border-white/20 rounded-full font-bold text-lg transition-all duration-300 hover:translate-y-[-5px] hover:shadow-2xl hover:shadow-white/20"
+            >
+              Discover More
+            </a>
           </div>
+        </div>
+
+        {/* Three.js Holographic Book */}
+        <div className="absolute right-10 top-1/2 transform -translate-y-1/2 hidden lg:block">
+          <div ref={mountRef} className="w-96 h-72"></div>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="py-12 px-4 sm:px-6 lg:px-8 bg-foreground text-background">
-        <div className="max-w-7xl mx-auto text-center">
-          <div className="flex items-center justify-center space-x-2 mb-4">
-            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary">
-              <GraduationCap className="w-5 h-5 text-primary-foreground" />
-            </div>
-            <span className="text-xl font-bold">EduBeast</span>
-          </div>
-          <p className="text-background/70 mb-6">
-            Empowering education through innovative school management solutions.
-          </p>
-          <div className="flex justify-center space-x-6 text-sm text-background/70">
-            <a href="#privacy" className="hover:text-background transition-colors">Privacy Policy</a>
-            <a href="#terms" className="hover:text-background transition-colors">Terms of Service</a>
-            <a href="#contact" className="hover:text-background transition-colors">Contact Us</a>
-          </div>
-          <div className="mt-8 pt-8 border-t border-background/20 text-sm text-background/60">
-            © 2024 EduBeast. All rights reserved.
-          </div>
+      {/* Stats Section */}
+      <div 
+        id="stats"
+        data-animate
+        className={`mx-6 md:mx-12 my-24 p-12 md:p-16 bg-slate-900/30 backdrop-blur-xl border border-white/10 rounded-3xl text-center transition-all duration-1000 ${
+          isVisible.stats ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+        }`}
+      >
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12">
+          <StatCounter target={2500} label="Students" />
+          <StatCounter target={150} label="Expert Faculty" />
+          <StatCounter target={98} label="College Acceptance" suffix="%" />
+          <StatCounter target={50} label="Countries Represented" />
         </div>
-      </footer>
+      </div>
     </div>
   );
 };
 
-export default Index;
+export default FutureAcademy;

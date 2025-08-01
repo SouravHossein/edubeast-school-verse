@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { Calendar, Clock, Eye, Heart, Share2, ArrowLeft, User, MessageCircle } from 'lucide-react';
-import { Navigation } from '@/components/Navigation';
+import Navigation  from '@/components/Navigation';
 
 interface BlogPost {
   id: string;
