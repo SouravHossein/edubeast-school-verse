@@ -9,6 +9,7 @@ import { SchoolConfigProvider } from "@/contexts/SchoolConfigContext";
 import { ApprovalProvider } from "@/contexts/ApprovalContext";
 import { TenantProvider } from "@/hooks/useTenant";
 import { ThemeProvider } from "@/hooks/useTheme";
+import { RBACProvider } from "@/hooks/useRBAC";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import Index from "./pages/Index";
@@ -67,44 +68,200 @@ const App = () => (
                       {/* Admin Portal */}
                       <Route path="/admin-portal-xyz123" element={<AdminPortal />} />
                       
-                      {/* Protected Dashboard Routes */}
+                      {/* Protected Portal Routes */}
+                      <Route 
+                        path="/portal/*" 
+                        element={
+                          <ProtectedRoute>
+                            <RBACProvider>
+                              <DashboardLayout>
+                                <Routes>
+                                  <Route index element={<Dashboard />} />
+                                  <Route 
+                                    path="students" 
+                                    element={
+                                      <ProtectedRoute requiredModule="students">
+                                        <StudentManagement />
+                                      </ProtectedRoute>
+                                    } 
+                                  />
+                                  <Route 
+                                    path="teachers" 
+                                    element={
+                                      <ProtectedRoute requiredModule="teachers">
+                                        <TeacherManagement />
+                                      </ProtectedRoute>
+                                    } 
+                                  />
+                                  <Route 
+                                    path="attendance" 
+                                    element={
+                                      <ProtectedRoute requiredModule="attendance">
+                                        <AttendanceManagement />
+                                      </ProtectedRoute>
+                                    } 
+                                  />
+                                  <Route 
+                                    path="classes" 
+                                    element={
+                                      <ProtectedRoute requiredModule="classes">
+                                        <ClassTimetableManagement />
+                                      </ProtectedRoute>
+                                    } 
+                                  />
+                                  <Route 
+                                    path="examinations" 
+                                    element={
+                                      <ProtectedRoute requiredModule="examinations">
+                                        <ExaminationManagement />
+                                      </ProtectedRoute>
+                                    } 
+                                  />
+                                  <Route 
+                                    path="fees" 
+                                    element={
+                                      <ProtectedRoute requiredModule="fees">
+                                        <FeeManagement />
+                                      </ProtectedRoute>
+                                    } 
+                                  />
+                                  <Route 
+                                    path="communications" 
+                                    element={
+                                      <ProtectedRoute requiredModule="communications">
+                                        <CommunicationHub />
+                                      </ProtectedRoute>
+                                    } 
+                                  />
+                                  <Route 
+                                    path="blog" 
+                                    element={
+                                      <ProtectedRoute requiredModule="blog">
+                                        <BlogDashboard />
+                                      </ProtectedRoute>
+                                    } 
+                                  />
+                                  <Route 
+                                    path="approvals" 
+                                    element={
+                                      <ProtectedRoute requiredRole="admin">
+                                        <UserApprovals />
+                                      </ProtectedRoute>
+                                    } 
+                                  />
+                                  <Route 
+                                    path="settings" 
+                                    element={
+                                      <ProtectedRoute requiredRole="admin">
+                                        <SchoolSettings />
+                                      </ProtectedRoute>
+                                    } 
+                                  />
+                                  <Route path="*" element={<Dashboard />} />
+                                </Routes>
+                              </DashboardLayout>
+                            </RBACProvider>
+                          </ProtectedRoute>
+                        } 
+                      />
+                      
+                      {/* Legacy Dashboard Routes (redirect to portal) */}
                       <Route 
                         path="/dashboard/*" 
                         element={
                           <ProtectedRoute>
-                            <DashboardLayout>
-                              <Routes>
-                                <Route index element={<Dashboard />} />
-                                <Route path="students" element={<StudentManagement />} />
-                                <Route path="teachers" element={<TeacherManagement />} />
-                                <Route path="attendance" element={<AttendanceManagement />} />
-                                <Route path="classes" element={<ClassTimetableManagement />} />
-                                <Route path="examinations" element={<ExaminationManagement />} />
-                                <Route path="fees" element={<FeeManagement />} />
-                                <Route path="communications" element={<CommunicationHub />} />
-                                <Route path="blog" element={<BlogDashboard />} />
-                                <Route 
-                                  path="approvals" 
-                                  element={
-                                    <ProtectedRoute requiredRole="admin">
-                                      <UserApprovals />
-                                    </ProtectedRoute>
-                                  } 
-                                />
-                                <Route 
-                                  path="settings" 
-                                  element={
-                                    <ProtectedRoute requiredRole="admin">
-                                      <SchoolSettings />
-                                    </ProtectedRoute>
-                                  } 
-                                />
-                                <Route path="*" element={<Dashboard />} />
-                              </Routes>
-                            </DashboardLayout>
+                            <RBACProvider>
+                              <DashboardLayout>
+                                <Routes>
+                                  <Route index element={<Dashboard />} />
+                                  <Route 
+                                    path="students" 
+                                    element={
+                                      <ProtectedRoute requiredModule="students">
+                                        <StudentManagement />
+                                      </ProtectedRoute>
+                                    } 
+                                  />
+                                  <Route 
+                                    path="teachers" 
+                                    element={
+                                      <ProtectedRoute requiredModule="teachers">
+                                        <TeacherManagement />
+                                      </ProtectedRoute>
+                                    } 
+                                  />
+                                  <Route 
+                                    path="attendance" 
+                                    element={
+                                      <ProtectedRoute requiredModule="attendance">
+                                        <AttendanceManagement />
+                                      </ProtectedRoute>
+                                    } 
+                                  />
+                                  <Route 
+                                    path="classes" 
+                                    element={
+                                      <ProtectedRoute requiredModule="classes">
+                                        <ClassTimetableManagement />
+                                      </ProtectedRoute>
+                                    } 
+                                  />
+                                  <Route 
+                                    path="examinations" 
+                                    element={
+                                      <ProtectedRoute requiredModule="examinations">
+                                        <ExaminationManagement />
+                                      </ProtectedRoute>
+                                    } 
+                                  />
+                                  <Route 
+                                    path="fees" 
+                                    element={
+                                      <ProtectedRoute requiredModule="fees">
+                                        <FeeManagement />
+                                      </ProtectedRoute>
+                                    } 
+                                  />
+                                  <Route 
+                                    path="communications" 
+                                    element={
+                                      <ProtectedRoute requiredModule="communications">
+                                        <CommunicationHub />
+                                      </ProtectedRoute>
+                                    } 
+                                  />
+                                  <Route 
+                                    path="blog" 
+                                    element={
+                                      <ProtectedRoute requiredModule="blog">
+                                        <BlogDashboard />
+                                      </ProtectedRoute>
+                                    } 
+                                  />
+                                  <Route 
+                                    path="approvals" 
+                                    element={
+                                      <ProtectedRoute requiredRole="admin">
+                                        <UserApprovals />
+                                      </ProtectedRoute>
+                                    } 
+                                  />
+                                  <Route 
+                                    path="settings" 
+                                    element={
+                                      <ProtectedRoute requiredRole="admin">
+                                        <SchoolSettings />
+                                      </ProtectedRoute>
+                                    } 
+                                  />
+                                  <Route path="*" element={<Dashboard />} />
+                                </Routes>
+                              </DashboardLayout>
+                            </RBACProvider>
                           </ProtectedRoute>
                         } 
                       />
+                      
                       <Route path="*" element={<NotFound />} />
                     </Routes>
                   </BrowserRouter>

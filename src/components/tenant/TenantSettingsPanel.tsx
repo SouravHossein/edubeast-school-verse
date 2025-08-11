@@ -13,7 +13,19 @@ import { Palette, Settings, Globe, CreditCard, Users } from 'lucide-react';
 
 export const TenantSettingsPanel: React.FC = () => {
   const { tenant, features, updateTenant, toggleFeature } = useTenant();
-  const [formData, setFormData] = useState(tenant || {});
+  const [formData, setFormData] = useState(tenant || {
+    name: '',
+    slug: '',
+    address: '',
+    contact_email: '',
+    contact_phone: '',
+    logo_url: '',
+    primary_color: '#3b82f6',
+    secondary_color: '#10b981',
+    accent_color: '#f59e0b',
+    font_family: 'Inter',
+    custom_domain: ''
+  });
 
   if (!tenant) return null;
 

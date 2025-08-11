@@ -1,20 +1,25 @@
+
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useRBAC } from '@/hooks/useRBAC';
 import { Loader } from 'lucide-react';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
   requiredRole?: 'admin' | 'teacher' | 'student' | 'parent';
   requiredPermission?: string;
+  requiredModule?: string;
 }
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
   children, 
   requiredRole, 
-  requiredPermission 
+  requiredPermission,
+  requiredModule
 }) => {
   const { user, isLoading, isAuthenticated } = useAuth();
+  const { hasPermission, canAccessModule } = useRBAC();
 
   if (isLoading) {
     return (
@@ -35,7 +40,11 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return <Navigate to="/dashboard" replace />;
   }
 
-  if (requiredPermission && !user?.permissions?.includes('all') && !user?.permissions?.includes(requiredPermission)) {
+  if (requiredPermission && !hasPermission(requiredPermission)) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  if (requiredModule && !canAccessModule(requiredModule)) {
     return <Navigate to="/dashboard" replace />;
   }
 
