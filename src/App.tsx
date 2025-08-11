@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -7,6 +6,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { SchoolConfigProvider } from "@/contexts/SchoolConfigContext";
 import { ApprovalProvider } from "@/contexts/ApprovalContext";
+import { TenantProvider } from "@/hooks/useTenant";
+import { ThemeProvider } from "@/hooks/useTheme";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import Index from "./pages/Index";
@@ -26,70 +27,78 @@ import BlogListing from "./pages/blog/BlogListing";
 import BlogPost from "./pages/blog/BlogPost";
 import BlogDashboard from "./pages/blog/BlogDashboard";
 import AuthorProfile from "./pages/blog/AuthorProfile";
-import { ThemeProvider } from './contexts/ThemeContext';
 import { AdminAuthProvider } from './contexts/AdminAuthContext';
 import { AdminPortal } from './pages/admin/AdminPortal';
-
+import SchoolSettings from './pages/settings/SchoolSettings';
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <SchoolConfigProvider>
-        <ApprovalProvider>
-          <AdminAuthProvider>
-            <AuthProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <ThemeProvider>
-                <Routes>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/gallery" element={<PublicGallery />} />
-                  <Route path="/apply" element={<ApplicationForm />} />
-                  <Route path="/blog" element={<BlogListing />} />
-                  <Route path="/blog/:slug" element={<BlogPost />} />
-                  <Route path="/author/:authorId" element={<AuthorProfile />} />
-                  <Route path="/admin-portal-xyz123" element={<AdminPortal />} />
-                <Route 
-                  path="/dashboard/*" 
-                  element={
-                    <ProtectedRoute>
-                      <DashboardLayout>
-                        <Routes>
-                          <Route index element={<Dashboard />} />
-                          <Route path="students" element={<StudentManagement />} />
-                          <Route path="teachers" element={<TeacherManagement />} />
-                          <Route path="attendance" element={<AttendanceManagement />} />
-                          <Route path="classes" element={<ClassTimetableManagement />} />
-                          <Route path="examinations" element={<ExaminationManagement />} />
-                          <Route path="fees" element={<FeeManagement />} />
-                          <Route path="communications" element={<CommunicationHub />} />
-                          <Route path="blog" element={<BlogDashboard />} />
-                          <Route 
-                            path="approvals" 
-                            element={
-                              <ProtectedRoute requiredRole="admin">
-                                <UserApprovals />
-                              </ProtectedRoute>
-                            } 
-                          />
-                          <Route path="*" element={<Dashboard />} />
-                        </Routes>
-                      </DashboardLayout>
-                    </ProtectedRoute>
-                  } 
-                />
-                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-              </ThemeProvider>
-            </BrowserRouter>
-            </AuthProvider>
-          </AdminAuthProvider>
-        </ApprovalProvider>
-      </SchoolConfigProvider>
+      <AdminAuthProvider>
+        <AuthProvider>
+          <TenantProvider>
+            <ThemeProvider>
+              <SchoolConfigProvider>
+                <ApprovalProvider>
+                  <Toaster />
+                  <Sonner />
+                  <BrowserRouter>
+                    <Routes>
+                      <Route path="/" element={<Index />} />
+                      <Route path="/gallery" element={<PublicGallery />} />
+                      <Route path="/apply" element={<ApplicationForm />} />
+                      <Route path="/blog" element={<BlogListing />} />
+                      <Route path="/blog/:slug" element={<BlogPost />} />
+                      <Route path="/author/:authorId" element={<AuthorProfile />} />
+                      <Route path="/admin-portal-xyz123" element={<AdminPortal />} />
+                      <Route 
+                        path="/dashboard/*" 
+                        element={
+                          <ProtectedRoute>
+                            <DashboardLayout>
+                              <Routes>
+                                <Route index element={<Dashboard />} />
+                                <Route path="students" element={<StudentManagement />} />
+                                <Route path="teachers" element={<TeacherManagement />} />
+                                <Route path="attendance" element={<AttendanceManagement />} />
+                                <Route path="classes" element={<ClassTimetableManagement />} />
+                                <Route path="examinations" element={<ExaminationManagement />} />
+                                <Route path="fees" element={<FeeManagement />} />
+                                <Route path="communications" element={<CommunicationHub />} />
+                                <Route path="blog" element={<BlogDashboard />} />
+                                <Route 
+                                  path="approvals" 
+                                  element={
+                                    <ProtectedRoute requiredRole="admin">
+                                      <UserApprovals />
+                                    </ProtectedRoute>
+                                  } 
+                                />
+                                <Route 
+                                  path="settings" 
+                                  element={
+                                    <ProtectedRoute requiredRole="admin">
+                                      <SchoolSettings />
+                                    </ProtectedRoute>
+                                  } 
+                                />
+                                <Route path="*" element={<Dashboard />} />
+                              </Routes>
+                            </DashboardLayout>
+                          </ProtectedRoute>
+                        } 
+                      />
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </BrowserRouter>
+                </ApprovalProvider>
+              </SchoolConfigProvider>
+            </ThemeProvider>
+          </TenantProvider>
+        </AuthProvider>
+      </AdminAuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
