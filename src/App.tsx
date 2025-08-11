@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -30,6 +31,9 @@ import AuthorProfile from "./pages/blog/AuthorProfile";
 import { AdminAuthProvider } from './contexts/AdminAuthContext';
 import { AdminPortal } from './pages/admin/AdminPortal';
 import SchoolSettings from './pages/settings/SchoolSettings';
+import { PublicHomePage } from './pages/public/PublicHomePage';
+import { PublicAboutPage } from './pages/public/PublicAboutPage';
+import { PublicNewsPage } from './pages/public/PublicNewsPage';
 
 const queryClient = new QueryClient();
 
@@ -46,13 +50,24 @@ const App = () => (
                   <Sonner />
                   <BrowserRouter>
                     <Routes>
-                      <Route path="/" element={<Index />} />
+                      {/* Public Routes */}
+                      <Route path="/" element={<PublicHomePage />} />
+                      <Route path="/about" element={<PublicAboutPage />} />
+                      <Route path="/news" element={<PublicNewsPage />} />
                       <Route path="/gallery" element={<PublicGallery />} />
                       <Route path="/apply" element={<ApplicationForm />} />
+                      <Route path="/contact" element={<PublicHomePage />} />
+                      <Route path="/admissions" element={<ApplicationForm />} />
+                      
+                      {/* Blog Routes */}
                       <Route path="/blog" element={<BlogListing />} />
                       <Route path="/blog/:slug" element={<BlogPost />} />
                       <Route path="/author/:authorId" element={<AuthorProfile />} />
+                      
+                      {/* Admin Portal */}
                       <Route path="/admin-portal-xyz123" element={<AdminPortal />} />
+                      
+                      {/* Protected Dashboard Routes */}
                       <Route 
                         path="/dashboard/*" 
                         element={

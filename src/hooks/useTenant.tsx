@@ -24,6 +24,11 @@ interface Tenant {
   meta_title?: string;
   meta_description?: string;
   keywords?: string[];
+  subscription_start?: string;
+  subscription_end?: string;
+  last_payment_date?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 interface TenantFeature {
@@ -32,6 +37,7 @@ interface TenantFeature {
   feature_key: string;
   is_enabled: boolean;
   config: Record<string, any>;
+  created_at: string;
 }
 
 interface TenantContextType {
@@ -91,8 +97,18 @@ export const TenantProvider = ({ children }: TenantProviderProps) => {
           .select('*')
           .eq('tenant_id', profile.tenant_id);
 
-        setTenant(tenantData);
-        setFeatures(featuresData || []);
+        if (tenantData) {
+          setTenant(tenantData as Tenant);
+        }
+        
+        if (featuresData) {
+          setFeatures(featuresData.map(feature => ({
+            ...feature,
+            config: typeof feature.config === 'string' 
+              ? JSON.parse(feature.config) 
+              : (feature.config as Record<string, any>) || {}
+          })));
+        }
       }
     } catch (error) {
       console.error('Error loading tenant data:', error);
