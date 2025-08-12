@@ -29,6 +29,11 @@ interface Tenant {
   last_payment_date?: string;
   created_at: string;
   updated_at: string;
+  is_published?: boolean;
+  theme?: string;
+  onboarding_completed?: boolean;
+  seo_settings?: Record<string, any>;
+  brand_settings?: Record<string, any>;
 }
 
 interface TenantFeature {

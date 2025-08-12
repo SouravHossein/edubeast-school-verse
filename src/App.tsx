@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { TenantProvider } from '@/hooks/useTenant';
-import { ThemeProvider } from '@/components/public/ThemeProvider';
+import { SiteThemeProvider } from '@/components/public/ThemeProvider';
 
 // Pages
 import Index from '@/pages/Index';
@@ -34,14 +34,14 @@ import { AdminPortal } from '@/pages/admin/AdminPortal';
 // Public Pages
 import { ApplicationForm } from '@/pages/public/ApplicationForm';
 import { PublicGallery } from '@/pages/public/PublicGallery';
-import PublicHomePage from '@/pages/public/PublicHomePage';
-import PublicAboutPage from '@/pages/public/PublicAboutPage';
-import PublicNewsPage from '@/pages/public/PublicNewsPage';
+import { PublicHomePage } from '@/pages/public/PublicHomePage';
+import { PublicAboutPage } from '@/pages/public/PublicAboutPage';
+import { PublicNewsPage } from '@/pages/public/PublicNewsPage';
 
 // Components
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { PublicSiteLayout } from '@/components/public/PublicSiteLayout';
-import DashboardLayout from '@/components/DashboardLayout';
+import { DashboardLayout } from '@/components/DashboardLayout';
 import { SchoolOnboardingWizard } from '@/components/tenant/SchoolOnboardingWizard';
 import { useTenant } from '@/hooks/useTenant';
 import { useAuth } from '@/contexts/AuthContext';
@@ -71,7 +71,7 @@ const OnboardingGate: React.FC<{ children: React.ReactNode }> = ({ children }) =
 
   // Check if user needs to complete onboarding
   if (!tenant?.onboarding_completed) {
-    return <SchoolOnboardingWizard />;
+    return <SchoolOnboardingWizard onComplete={() => window.location.reload()} />;
   }
 
   return <>{children}</>;
@@ -109,7 +109,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <TenantProvider>
-          <ThemeProvider>
+          <SiteThemeProvider>
             <Router>
               <div className="min-h-screen bg-background">
                 <Routes>
@@ -121,13 +121,13 @@ function App() {
                     path="/onboard" 
                     element={
                       <ProtectedRoute>
-                        <SchoolOnboardingWizard />
+                        <SchoolOnboardingWizard onComplete={() => window.location.href = "/dashboard"} />
                       </ProtectedRoute>
                     } 
                   />
 
                   {/* Public School Site Routes */}
-                  <Route path="/s/:slug" element={<PublicSiteLayout />}>
+                  <Route path="/s/:slug" element={<PublicSiteLayout><div /></PublicSiteLayout>}>
                     <Route index element={<PublicHomePage />} />
                     <Route path="about" element={<PublicAboutPage />} />
                     <Route path="news" element={<PublicNewsPage />} />
@@ -230,7 +230,7 @@ function App() {
                 <Toaster />
               </div>
             </Router>
-          </ThemeProvider>
+          </SiteThemeProvider>
         </TenantProvider>
       </AuthProvider>
     </QueryClientProvider>
