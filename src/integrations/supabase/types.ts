@@ -1288,6 +1288,50 @@ export type Database = {
           },
         ]
       }
+      school_domains: {
+        Row: {
+          created_at: string | null
+          dns_instructions: Json | null
+          domain: string
+          id: string
+          is_primary: boolean | null
+          school_id: string | null
+          updated_at: string | null
+          verification_token: string | null
+          verified_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          dns_instructions?: Json | null
+          domain: string
+          id?: string
+          is_primary?: boolean | null
+          school_id?: string | null
+          updated_at?: string | null
+          verification_token?: string | null
+          verified_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          dns_instructions?: Json | null
+          domain?: string
+          id?: string
+          is_primary?: boolean | null
+          school_id?: string | null
+          updated_at?: string | null
+          verification_token?: string | null
+          verified_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "school_domains_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       schools: {
         Row: {
           academic_year_end: string | null
@@ -1727,6 +1771,7 @@ export type Database = {
         Row: {
           accent_color: string | null
           address: string | null
+          brand_settings: Json | null
           contact_email: string | null
           contact_phone: string | null
           created_at: string
@@ -1734,6 +1779,7 @@ export type Database = {
           custom_domain: string | null
           font_family: string | null
           id: string
+          is_published: boolean | null
           keywords: string[] | null
           language: string | null
           last_payment_date: string | null
@@ -1741,19 +1787,23 @@ export type Database = {
           meta_description: string | null
           meta_title: string | null
           name: string
+          onboarding_completed: boolean | null
           plan: string
           primary_color: string | null
           secondary_color: string | null
+          seo_settings: Json | null
           slug: string
           status: string
           subscription_end: string | null
           subscription_start: string | null
+          theme: string | null
           timezone: string | null
           updated_at: string
         }
         Insert: {
           accent_color?: string | null
           address?: string | null
+          brand_settings?: Json | null
           contact_email?: string | null
           contact_phone?: string | null
           created_at?: string
@@ -1761,6 +1811,7 @@ export type Database = {
           custom_domain?: string | null
           font_family?: string | null
           id?: string
+          is_published?: boolean | null
           keywords?: string[] | null
           language?: string | null
           last_payment_date?: string | null
@@ -1768,19 +1819,23 @@ export type Database = {
           meta_description?: string | null
           meta_title?: string | null
           name: string
+          onboarding_completed?: boolean | null
           plan?: string
           primary_color?: string | null
           secondary_color?: string | null
+          seo_settings?: Json | null
           slug: string
           status?: string
           subscription_end?: string | null
           subscription_start?: string | null
+          theme?: string | null
           timezone?: string | null
           updated_at?: string
         }
         Update: {
           accent_color?: string | null
           address?: string | null
+          brand_settings?: Json | null
           contact_email?: string | null
           contact_phone?: string | null
           created_at?: string
@@ -1788,6 +1843,7 @@ export type Database = {
           custom_domain?: string | null
           font_family?: string | null
           id?: string
+          is_published?: boolean | null
           keywords?: string[] | null
           language?: string | null
           last_payment_date?: string | null
@@ -1795,13 +1851,16 @@ export type Database = {
           meta_description?: string | null
           meta_title?: string | null
           name?: string
+          onboarding_completed?: boolean | null
           plan?: string
           primary_color?: string | null
           secondary_color?: string | null
+          seo_settings?: Json | null
           slug?: string
           status?: string
           subscription_end?: string | null
           subscription_start?: string | null
+          theme?: string | null
           timezone?: string | null
           updated_at?: string
         }

@@ -1,150 +1,189 @@
 
-import React, { useState } from 'react';
+import React from 'react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { useTenant } from '@/hooks/useTenant';
-import { Palette, Settings, Globe, CreditCard, Users } from 'lucide-react';
+import { DomainManager } from './DomainManager';
+import { PublicationControls } from './PublicationControls';
+import { School, Palette, Globe, Settings, Users, Eye } from 'lucide-react';
 
 export const TenantSettingsPanel: React.FC = () => {
   const { tenant, features, updateTenant, toggleFeature } = useTenant();
-  const [formData, setFormData] = useState(tenant || {
-    name: '',
-    slug: '',
-    address: '',
-    contact_email: '',
-    contact_phone: '',
-    logo_url: '',
-    primary_color: '#3b82f6',
-    secondary_color: '#10b981',
-    accent_color: '#f59e0b',
-    font_family: 'Inter',
-    custom_domain: ''
-  });
 
-  if (!tenant) return null;
+  if (!tenant) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-muted-foreground">Loading school settings...</p>
+      </div>
+    );
+  }
 
-  const handleInputChange = (field: string, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+  const handleBasicUpdate = async (field: string, value: any) => {
+    await updateTenant({ [field]: value });
   };
 
-  const handleSave = () => {
-    updateTenant(formData);
-  };
+  const availableFeatures = [
+    { key: 'attendanceManagement', label: 'Attendance Management', description: 'Track student and staff attendance' },
+    { key: 'onlineExams', label: 'Online Examinations', description: 'Conduct digital exams and assessments' },
+    { key: 'feeManagement', label: 'Fee Management', description: 'Handle fee collection and payments' },
+    { key: 'parentPortal', label: 'Parent Portal', description: 'Parent access to student information' },
+    { key: 'studentPortal', label: 'Student Portal', description: 'Student dashboard and information' },
+    { key: 'teacherPortal', label: 'Teacher Portal', description: 'Teacher management interface' },
+    { key: 'messagingSystem', label: 'Messaging System', description: 'Internal communication platform' },
+    { key: 'eventManagement', label: 'Event Management', description: 'School event planning and tracking' },
+    { key: 'reportCards', label: 'Report Cards', description: 'Digital report card generation' },
+    { key: 'libraryManagement', label: 'Library Management', description: 'Library book and resource tracking' }
+  ];
 
-  const featureCategories = {
-    core: ['attendanceManagement', 'feeManagement', 'studentPortal', 'teacherPortal'],
-    advanced: ['onlineExams', 'parentPortal', 'messagingSystem', 'eventManagement'],
-    premium: ['libraryManagement', 'transportManagement', 'hostelManagement', 'reportCards'],
-    optional: ['disciplineTracking', 'healthRecords']
-  };
+  const themes = [
+    { value: 'modern', label: 'Modern' },
+    { value: 'minimal', label: 'Minimal' },
+    { value: 'classic', label: 'Classic' }
+  ];
 
-  const getFeatureLabel = (key: string) => {
-    const labels: Record<string, string> = {
-      attendanceManagement: 'Attendance Management',
-      onlineExams: 'Online Examinations',
-      libraryManagement: 'Library Management',
-      transportManagement: 'Transport Management',
-      hostelManagement: 'Hostel Management',
-      feeManagement: 'Fee Management',
-      parentPortal: 'Parent Portal',
-      studentPortal: 'Student Portal',
-      teacherPortal: 'Teacher Portal',
-      messagingSystem: 'Messaging System',
-      eventManagement: 'Event Management',
-      reportCards: 'Report Cards',
-      disciplineTracking: 'Discipline Tracking',
-      healthRecords: 'Health Records'
-    };
-    return labels[key] || key;
-  };
+  const fontFamilies = [
+    { value: 'Inter', label: 'Inter' },
+    { value: 'Roboto', label: 'Roboto' },
+    { value: 'Open Sans', label: 'Open Sans' },
+    { value: 'Poppins', label: 'Poppins' },
+    { value: 'Lato', label: 'Lato' }
+  ];
 
   return (
-    <div className="container mx-auto p-6 max-w-4xl">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold">School Settings</h1>
-        <p className="text-muted-foreground">Manage your school's branding, features, and configuration</p>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">School Settings</h1>
+          <p className="text-muted-foreground mt-1">
+            Manage your school's configuration and appearance
+          </p>
+        </div>
       </div>
 
-      <Tabs defaultValue="general" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="general" className="flex items-center gap-2">
-            <Settings className="w-4 h-4" />
-            General
+      <Tabs defaultValue="basic" className="w-full">
+        <TabsList className="grid w-full grid-cols-6">
+          <TabsTrigger value="basic" className="flex items-center gap-2">
+            <School className="w-4 h-4" />
+            Basic
           </TabsTrigger>
           <TabsTrigger value="branding" className="flex items-center gap-2">
             <Palette className="w-4 h-4" />
             Branding
           </TabsTrigger>
+          <TabsTrigger value="seo" className="flex items-center gap-2">
+            <Globe className="w-4 h-4" />
+            SEO
+          </TabsTrigger>
           <TabsTrigger value="features" className="flex items-center gap-2">
-            <Users className="w-4 h-4" />
+            <Settings className="w-4 h-4" />
             Features
           </TabsTrigger>
-          <TabsTrigger value="domain" className="flex items-center gap-2">
+          <TabsTrigger value="domains" className="flex items-center gap-2">
             <Globe className="w-4 h-4" />
-            Domain
+            Domains
           </TabsTrigger>
-          <TabsTrigger value="billing" className="flex items-center gap-2">
-            <CreditCard className="w-4 h-4" />
-            Billing
+          <TabsTrigger value="publication" className="flex items-center gap-2">
+            <Eye className="w-4 h-4" />
+            Publication
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="general" className="space-y-6">
+        <TabsContent value="basic" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>General Information</CardTitle>
-              <CardDescription>Basic information about your school</CardDescription>
+              <CardTitle>Basic Information</CardTitle>
+              <CardDescription>
+                Update your school's basic details and contact information
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
+                <div>
                   <Label htmlFor="name">School Name</Label>
                   <Input
                     id="name"
-                    value={formData.name || ''}
-                    onChange={(e) => handleInputChange('name', e.target.value)}
+                    value={tenant.name}
+                    onChange={(e) => handleBasicUpdate('name', e.target.value)}
                   />
                 </div>
-                <div className="space-y-2">
+                <div>
                   <Label htmlFor="slug">URL Slug</Label>
                   <Input
                     id="slug"
-                    value={formData.slug || ''}
-                    onChange={(e) => handleInputChange('slug', e.target.value)}
+                    value={tenant.slug}
+                    onChange={(e) => handleBasicUpdate('slug', e.target.value)}
                   />
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {tenant.slug}.schoolsaas.com
+                  </p>
                 </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="address">Address</Label>
-                <Textarea
-                  id="address"
-                  value={formData.address || ''}
-                  onChange={(e) => handleInputChange('address', e.target.value)}
-                />
-              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
+                <div>
                   <Label htmlFor="contact_email">Contact Email</Label>
                   <Input
                     id="contact_email"
                     type="email"
-                    value={formData.contact_email || ''}
-                    onChange={(e) => handleInputChange('contact_email', e.target.value)}
+                    value={tenant.contact_email || ''}
+                    onChange={(e) => handleBasicUpdate('contact_email', e.target.value)}
                   />
                 </div>
-                <div className="space-y-2">
+                <div>
                   <Label htmlFor="contact_phone">Contact Phone</Label>
                   <Input
                     id="contact_phone"
-                    value={formData.contact_phone || ''}
-                    onChange={(e) => handleInputChange('contact_phone', e.target.value)}
+                    value={tenant.contact_phone || ''}
+                    onChange={(e) => handleBasicUpdate('contact_phone', e.target.value)}
                   />
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="address">Address</Label>
+                <Textarea
+                  id="address"
+                  value={tenant.address || ''}
+                  onChange={(e) => handleBasicUpdate('address', e.target.value)}
+                  rows={3}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="timezone">Timezone</Label>
+                  <Select value={tenant.timezone} onValueChange={(value) => handleBasicUpdate('timezone', value)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Asia/Dhaka">Asia/Dhaka (UTC+6)</SelectItem>
+                      <SelectItem value="Asia/Kolkata">Asia/Kolkata (UTC+5:30)</SelectItem>
+                      <SelectItem value="UTC">UTC (UTC+0)</SelectItem>
+                      <SelectItem value="America/New_York">America/New_York (UTC-5)</SelectItem>
+                      <SelectItem value="Europe/London">Europe/London (UTC+0)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="language">Language</Label>
+                  <Select value={tenant.language} onValueChange={(value) => handleBasicUpdate('language', value)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="en">English</SelectItem>
+                      <SelectItem value="bn">Bengali</SelectItem>
+                      <SelectItem value="hi">Hindi</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </CardContent>
@@ -154,213 +193,175 @@ export const TenantSettingsPanel: React.FC = () => {
         <TabsContent value="branding" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Visual Branding</CardTitle>
-              <CardDescription>Customize your school's appearance and colors</CardDescription>
+              <CardTitle>Theme & Colors</CardTitle>
+              <CardDescription>
+                Customize your school's visual appearance
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="logo_url">Logo URL</Label>
+              <div>
+                <Label>Theme</Label>
+                <Select value={tenant.theme || 'modern'} onValueChange={(value) => handleBasicUpdate('theme', value)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {themes.map(theme => (
+                      <SelectItem key={theme.value} value={theme.value}>
+                        {theme.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label>Font Family</Label>
+                <Select value={tenant.font_family} onValueChange={(value) => handleBasicUpdate('font_family', value)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {fontFamilies.map(font => (
+                      <SelectItem key={font.value} value={font.value}>
+                        {font.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="primary_color">Primary Color</Label>
+                  <div className="flex gap-2 mt-1">
+                    <Input
+                      type="color"
+                      value={tenant.primary_color}
+                      onChange={(e) => handleBasicUpdate('primary_color', e.target.value)}
+                      className="w-16 h-10"
+                    />
+                    <Input
+                      value={tenant.primary_color}
+                      onChange={(e) => handleBasicUpdate('primary_color', e.target.value)}
+                      className="flex-1"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="secondary_color">Secondary Color</Label>
+                  <div className="flex gap-2 mt-1">
+                    <Input
+                      type="color"
+                      value={tenant.secondary_color}
+                      onChange={(e) => handleBasicUpdate('secondary_color', e.target.value)}
+                      className="w-16 h-10"
+                    />
+                    <Input
+                      value={tenant.secondary_color}
+                      onChange={(e) => handleBasicUpdate('secondary_color', e.target.value)}
+                      className="flex-1"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="accent_color">Accent Color</Label>
+                  <div className="flex gap-2 mt-1">
+                    <Input
+                      type="color"
+                      value={tenant.accent_color}
+                      onChange={(e) => handleBasicUpdate('accent_color', e.target.value)}
+                      className="w-16 h-10"
+                    />
+                    <Input
+                      value={tenant.accent_color}
+                      onChange={(e) => handleBasicUpdate('accent_color', e.target.value)}
+                      className="flex-1"
+                    />
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="seo" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>SEO Settings</CardTitle>
+              <CardDescription>
+                Optimize your school's search engine presence
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label htmlFor="meta_title">Meta Title</Label>
                 <Input
-                  id="logo_url"
-                  value={formData.logo_url || ''}
-                  onChange={(e) => handleInputChange('logo_url', e.target.value)}
+                  id="meta_title"
+                  value={tenant.meta_title || ''}
+                  onChange={(e) => handleBasicUpdate('meta_title', e.target.value)}
+                  placeholder={tenant.name}
                 />
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="primary_color">Primary Color</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="primary_color"
-                      type="color"
-                      value={formData.primary_color || '#3b82f6'}
-                      onChange={(e) => handleInputChange('primary_color', e.target.value)}
-                      className="w-16 h-10"
-                    />
-                    <Input
-                      value={formData.primary_color || '#3b82f6'}
-                      onChange={(e) => handleInputChange('primary_color', e.target.value)}
-                      className="flex-1"
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="secondary_color">Secondary Color</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="secondary_color"
-                      type="color"
-                      value={formData.secondary_color || '#10b981'}
-                      onChange={(e) => handleInputChange('secondary_color', e.target.value)}
-                      className="w-16 h-10"
-                    />
-                    <Input
-                      value={formData.secondary_color || '#10b981'}
-                      onChange={(e) => handleInputChange('secondary_color', e.target.value)}
-                      className="flex-1"
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="accent_color">Accent Color</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="accent_color"
-                      type="color"
-                      value={formData.accent_color || '#f59e0b'}
-                      onChange={(e) => handleInputChange('accent_color', e.target.value)}
-                      className="w-16 h-10"
-                    />
-                    <Input
-                      value={formData.accent_color || '#f59e0b'}
-                      onChange={(e) => handleInputChange('accent_color', e.target.value)}
-                      className="flex-1"
-                    />
-                  </div>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="font_family">Font Family</Label>
-                <select
-                  id="font_family"
-                  value={formData.font_family || 'Inter'}
-                  onChange={(e) => handleInputChange('font_family', e.target.value)}
-                  className="w-full p-2 border rounded-md"
-                >
-                  <option value="Inter">Inter</option>
-                  <option value="Roboto">Roboto</option>
-                  <option value="Open Sans">Open Sans</option>
-                  <option value="Poppins">Poppins</option>
-                  <option value="Nunito">Nunito</option>
-                </select>
+              <div>
+                <Label htmlFor="meta_description">Meta Description</Label>
+                <Textarea
+                  id="meta_description"
+                  value={tenant.meta_description || ''}
+                  onChange={(e) => handleBasicUpdate('meta_description', e.target.value)}
+                  placeholder="A brief description of your school"
+                  rows={3}
+                />
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
         <TabsContent value="features" className="space-y-6">
-          {Object.entries(featureCategories).map(([category, featureKeys]) => (
-            <Card key={category}>
-              <CardHeader>
-                <CardTitle className="capitalize">{category} Features</CardTitle>
-                <CardDescription>
-                  {category === 'core' && 'Essential features for school management'}
-                  {category === 'advanced' && 'Enhanced features for better functionality'}
-                  {category === 'premium' && 'Premium features for comprehensive management'}
-                  {category === 'optional' && 'Optional features for specialized needs'}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {featureKeys.map(featureKey => {
-                    const feature = features.find(f => f.feature_key === featureKey);
-                    const isEnabled = feature?.is_enabled ?? false;
-                    
-                    return (
-                      <div key={featureKey} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div className="flex items-center gap-3">
-                          <Switch
-                            checked={isEnabled}
-                            onCheckedChange={(checked) => toggleFeature(featureKey, checked)}
-                          />
-                          <div>
-                            <div className="font-medium">{getFeatureLabel(featureKey)}</div>
-                            <div className="text-sm text-muted-foreground">
-                              {featureKey.replace(/([A-Z])/g, ' $1').toLowerCase()}
-                            </div>
-                          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Feature Management</CardTitle>
+              <CardDescription>
+                Enable or disable features for your school
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {availableFeatures.map(feature => {
+                  const isEnabled = features.find(f => f.feature_key === feature.key)?.is_enabled ?? false;
+                  return (
+                    <div key={feature.key} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-medium">{feature.label}</h4>
+                          <Badge variant={isEnabled ? "default" : "secondary"}>
+                            {isEnabled ? "Enabled" : "Disabled"}
+                          </Badge>
                         </div>
-                        <Badge variant={isEnabled ? 'default' : 'secondary'}>
-                          {isEnabled ? 'Enabled' : 'Disabled'}
-                        </Badge>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {feature.description}
+                        </p>
                       </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </TabsContent>
-
-        <TabsContent value="domain" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Domain Settings</CardTitle>
-              <CardDescription>Configure your custom domain and URL settings</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="custom_domain">Custom Domain</Label>
-                <Input
-                  id="custom_domain"
-                  placeholder="www.yourschool.edu.bd"
-                  value={formData.custom_domain || ''}
-                  onChange={(e) => handleInputChange('custom_domain', e.target.value)}
-                />
-                <p className="text-sm text-muted-foreground">
-                  Point your domain's CNAME record to our servers to use your own domain.
-                </p>
-              </div>
-              <div className="p-4 bg-muted rounded-lg">
-                <h4 className="font-medium mb-2">Current URLs:</h4>
-                <ul className="space-y-1 text-sm">
-                  <li>Default: https://{tenant.slug}.schoolsaas.com</li>
-                  {tenant.custom_domain && (
-                    <li>Custom: https://{tenant.custom_domain}</li>
-                  )}
-                </ul>
+                      <Switch
+                        checked={isEnabled}
+                        onCheckedChange={(checked) => toggleFeature(feature.key, checked)}
+                      />
+                    </div>
+                  );
+                })}
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="billing" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Billing Information</CardTitle>
-              <CardDescription>Manage your subscription and billing details</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="p-4 border rounded-lg">
-                  <div className="font-medium">Current Plan</div>
-                  <Badge className="mt-1 capitalize">{tenant.plan}</Badge>
-                </div>
-                <div className="p-4 border rounded-lg">
-                  <div className="font-medium">Status</div>
-                  <Badge 
-                    variant={tenant.status === 'active' ? 'default' : 'destructive'}
-                    className="mt-1 capitalize"
-                  >
-                    {tenant.status}
-                  </Badge>
-                </div>
-                <div className="p-4 border rounded-lg">
-                  <div className="font-medium">Currency</div>
-                  <div className="mt-1">{tenant.currency}</div>
-                </div>
-              </div>
-              {tenant.subscription_end && (
-                <div className="p-4 bg-muted rounded-lg">
-                  <div className="font-medium">Subscription Details</div>
-                  <div className="text-sm text-muted-foreground mt-1">
-                    Valid until: {new Date(tenant.subscription_end).toLocaleDateString()}
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+        <TabsContent value="domains" className="space-y-6">
+          <DomainManager />
+        </TabsContent>
+
+        <TabsContent value="publication" className="space-y-6">
+          <PublicationControls />
         </TabsContent>
       </Tabs>
-
-      <div className="flex justify-end gap-4 pt-6">
-        <Button variant="outline" onClick={() => setFormData(tenant)}>
-          Reset
-        </Button>
-        <Button onClick={handleSave}>
-          Save Changes
-        </Button>
-      </div>
     </div>
   );
 };
