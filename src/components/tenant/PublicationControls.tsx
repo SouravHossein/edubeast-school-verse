@@ -4,98 +4,173 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Eye, EyeOff, Globe, Lock, ExternalLink, AlertTriangle } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 import { useTenant } from '@/hooks/useTenant';
-import { Eye, EyeOff, Globe, AlertTriangle } from 'lucide-react';
 
-export const PublicationControls: React.FC = () => {
+export const PublicationControls = () => {
+  const { toast } = useToast();
   const { tenant, updateTenant } = useTenant();
-
-  if (!tenant) return null;
 
   const handlePublishToggle = async (published: boolean) => {
     await updateTenant({ is_published: published });
+    
+    toast({
+      title: published ? "School Published" : "School Unpublished",
+      description: published 
+        ? "Your school website is now public and visible to everyone"
+        : "Your school website is now private and only accessible to logged-in users",
+    });
   };
 
-  const getPublicationStatus = () => {
-    if (tenant.is_published) {
-      return {
-        icon: <Eye className="w-4 h-4" />,
-        label: "Published",
-        variant: "default" as const,
-        description: "Your school website is live and visible to everyone"
-      };
-    } else {
-      return {
-        icon: <EyeOff className="w-4 h-4" />,
-        label: "Unpublished",
-        variant: "secondary" as const,
-        description: "Your school website is in draft mode and only visible to logged-in users"
-      };
-    }
-  };
-
-  const status = getPublicationStatus();
+  const previewUrl = tenant?.slug ? `/s/${tenant.slug}` : '#';
+  const customDomainUrl = tenant?.custom_domain ? `https://${tenant.custom_domain}` : null;
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Globe className="w-5 h-5" />
-          Website Publication
-        </CardTitle>
-        <CardDescription>
-          Control the public visibility of your school website
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <Label htmlFor="publish-toggle">Publication Status</Label>
-              <Badge variant={status.variant} className="flex items-center gap-1">
-                {status.icon}
-                {status.label}
-              </Badge>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              {status.description}
-            </p>
-          </div>
-          <Switch
-            id="publish-toggle"
-            checked={tenant.is_published}
-            onCheckedChange={handlePublishToggle}
-          />
-        </div>
-
-        {!tenant.is_published && (
-          <Alert>
-            <AlertTriangle className="h-4 w-4" />
-            <AlertDescription>
-              <strong>Website is currently unpublished.</strong> Only users logged into your portal can view the website. 
-              Publish when you're ready to make it visible to everyone.
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {tenant.is_published && (
-          <div className="space-y-2">
-            <h4 className="font-medium">Your website is live at:</h4>
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Globe className="h-5 w-5" />
+            Publication Status
+          </CardTitle>
+          <CardDescription>
+            Control the public visibility of your school website
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="flex items-center justify-between">
             <div className="space-y-1">
-              <div className="p-2 bg-muted rounded font-mono text-sm">
-                https://{tenant.slug}.schoolsaas.com
+              <div className="flex items-center gap-2">
+                <Label htmlFor="publish-toggle" className="text-base font-medium">
+                  Public Website
+                </Label>
+                {tenant?.is_published ? (
+                  <Badge variant="default" className="flex items-center gap-1">
+                    <Eye className="h-3 w-3" />
+                    Published
+                  </Badge>
+                ) : (
+                  <Badge variant="secondary" className="flex items-center gap-1">
+                    <EyeOff className="h-3 w-3" />
+                    Draft
+                  </Badge>
+                )}
               </div>
-              {tenant.custom_domain && (
-                <div className="p-2 bg-muted rounded font-mono text-sm">
-                  https://{tenant.custom_domain}
-                </div>
-              )}
+              <p className="text-sm text-muted-foreground">
+                {tenant?.is_published 
+                  ? "Your school website is visible to the public and search engines"
+                  : "Your school website is private and only accessible to logged-in users"
+                }
+              </p>
             </div>
+            <Switch
+              id="publish-toggle"
+              checked={tenant?.is_published || false}
+              onCheckedChange={handlePublishToggle}
+            />
           </div>
-        )}
-      </CardContent>
-    </Card>
+
+          {!tenant?.is_published && (
+            <Alert>
+              <Lock className="h-4 w-4" />
+              <AlertDescription>
+                Your school website is currently in draft mode. Only logged-in users can access it.
+                Enable publication to make it visible to everyone.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {tenant?.is_published && !tenant?.meta_title && (
+            <Alert>
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                Your website is published but missing SEO optimization. Consider adding a meta title 
+                and description in the SEO settings tab.
+              </AlertDescription>
+            </Alert>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Website URLs</CardTitle>
+          <CardDescription>
+            Access your school website through these URLs
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between p-3 border rounded-lg">
+              <div>
+                <div className="font-medium">Default URL</div>
+                <div className="text-sm text-muted-foreground font-mono">{previewUrl}</div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" asChild>
+                  <a href={previewUrl} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="h-4 w-4 mr-1" />
+                    Preview
+                  </a>
+                </Button>
+              </div>
+            </div>
+
+            {customDomainUrl && (
+              <div className="flex items-center justify-between p-3 border rounded-lg">
+                <div>
+                  <div className="font-medium">Custom Domain</div>
+                  <div className="text-sm text-muted-foreground font-mono">{customDomainUrl}</div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant="default">Primary</Badge>
+                  <Button variant="outline" size="sm" asChild>
+                    <a href={customDomainUrl} target="_blank" rel="noopener noreferrer">
+                      <ExternalLink className="h-4 w-4 mr-1" />
+                      Visit
+                    </a>
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>SEO & Indexing</CardTitle>
+          <CardDescription>
+            Control how search engines discover and index your website
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <Label className="text-base font-medium">Search Engine Indexing</Label>
+                <p className="text-sm text-muted-foreground">
+                  Allow search engines to index and display your website in search results
+                </p>
+              </div>
+              <Switch
+                checked={tenant?.is_published || false}
+                disabled={true}
+              />
+            </div>
+            
+            <Alert>
+              <AlertDescription>
+                Search engine indexing is automatically enabled when your website is published.
+                Unpublishing will prevent search engines from indexing your content.
+              </AlertDescription>
+            </Alert>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
