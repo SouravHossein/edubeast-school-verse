@@ -1,70 +1,101 @@
 
 import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { AttendanceMarking } from '@/components/attendance/AttendanceMarking';
+import { AttendanceMarkingForm } from '@/components/attendance/AttendanceMarkingForm';
 import { AttendanceReports } from '@/components/attendance/AttendanceReports';
-import { AttendanceAnalytics } from '@/components/attendance/AttendanceAnalytics';
-import { BulkAttendance } from '@/components/attendance/BulkAttendance';
-import { MultiModalAttendance } from '@/components/attendance/MultiModalAttendance';
-import { NotificationSystem } from '@/components/attendance/NotificationSystem';
-import { AbsenteeismTracking } from '@/components/attendance/AbsenteeismTracking';
-import { SchoolFriendlyFeatures } from '@/components/attendance/SchoolFriendlyFeatures';
+import { useStudents } from '@/hooks/useStudents';
+import { useAttendance } from '@/hooks/useAttendance';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
-export default function AttendanceManagement() {
+interface Class {
+  id: string;
+  name: string;
+  section?: string;
+  grade_level: number;
+}
+
+const AttendanceManagement = () => {
+  const { students } = useStudents();
+  const { bulkMarkAttendance } = useAttendance();
+  const [classes, setClasses] = useState<Class[]>([]);
+  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
+
+  React.useEffect(() => {
+    fetchClasses();
+  }, []);
+
+  const fetchClasses = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('classes')
+        .select('id, name, section, grade_level')
+        .eq('is_active', true)
+        .order('grade_level', { ascending: true });
+
+      if (error) throw error;
+      setClasses(data || []);
+    } catch (error) {
+      console.error('Error fetching classes:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load classes",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleSaveAttendance = async (date: string, classId: string, attendanceData: any[]) => {
+    setLoading(true);
+    try {
+      const records = attendanceData.map(record => ({
+        student_id: record.student_id,
+        class_id: classId,
+        date,
+        status: record.status,
+        check_in_time: record.check_in_time,
+        remarks: record.remarks
+      }));
+
+      await bulkMarkAttendance(records);
+    } catch (error) {
+      console.error('Error saving attendance:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="container mx-auto p-6 space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Attendance Management System</h1>
-          <p className="text-muted-foreground">Comprehensive attendance tracking with multi-modal support</p>
+          <h1 className="text-3xl font-bold">Attendance Management</h1>
+          <p className="text-muted-foreground">Track and manage student attendance</p>
         </div>
       </div>
 
-      <Tabs defaultValue="marking" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-8">
+      <Tabs defaultValue="marking" className="space-y-6">
+        <TabsList>
           <TabsTrigger value="marking">Mark Attendance</TabsTrigger>
-          <TabsTrigger value="multimodal">Multi-Modal</TabsTrigger>
-          <TabsTrigger value="reports">Reports</TabsTrigger>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
-          <TabsTrigger value="absenteeism">Absenteeism</TabsTrigger>
-          <TabsTrigger value="notifications">Notifications</TabsTrigger>
-          <TabsTrigger value="features">School Features</TabsTrigger>
-          <TabsTrigger value="bulk">Bulk Operations</TabsTrigger>
+          <TabsTrigger value="reports">Reports & Analytics</TabsTrigger>
         </TabsList>
 
         <TabsContent value="marking">
-          <AttendanceMarking />
-        </TabsContent>
-
-        <TabsContent value="multimodal">
-          <MultiModalAttendance />
+          <AttendanceMarkingForm
+            students={students}
+            classes={classes}
+            onSave={handleSaveAttendance}
+            loading={loading}
+          />
         </TabsContent>
 
         <TabsContent value="reports">
           <AttendanceReports />
         </TabsContent>
-
-        <TabsContent value="analytics">
-          <AttendanceAnalytics />
-        </TabsContent>
-
-        <TabsContent value="absenteeism">
-          <AbsenteeismTracking />
-        </TabsContent>
-
-        <TabsContent value="notifications">
-          <NotificationSystem />
-        </TabsContent>
-
-        <TabsContent value="features">
-          <SchoolFriendlyFeatures />
-        </TabsContent>
-
-        <TabsContent value="bulk">
-          <BulkAttendance />
-        </TabsContent>
       </Tabs>
     </div>
   );
-}
+};
+
+export default AttendanceManagement;
