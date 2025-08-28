@@ -576,6 +576,190 @@ export type Database = {
         }
         Relationships: []
       }
+      book_copies: {
+        Row: {
+          acquisition_date: string | null
+          barcode: string | null
+          book_id: string
+          condition: string
+          copy_number: string
+          created_at: string | null
+          id: string
+          notes: string | null
+          price: number | null
+          rfid_tag: string | null
+          shelf_location: string | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          acquisition_date?: string | null
+          barcode?: string | null
+          book_id: string
+          condition?: string
+          copy_number: string
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          price?: number | null
+          rfid_tag?: string | null
+          shelf_location?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          acquisition_date?: string | null
+          barcode?: string | null
+          book_id?: string
+          condition?: string
+          copy_number?: string
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          price?: number | null
+          rfid_tag?: string | null
+          shelf_location?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "book_copies_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      books: {
+        Row: {
+          author: string
+          category: string
+          cover_image: string | null
+          created_at: string | null
+          description: string | null
+          edition: string | null
+          genre: string
+          id: string
+          is_active: boolean | null
+          isbn: string | null
+          language: string | null
+          pages: number | null
+          publication_year: number | null
+          publisher: string | null
+          tags: string[] | null
+          tenant_id: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          author: string
+          category: string
+          cover_image?: string | null
+          created_at?: string | null
+          description?: string | null
+          edition?: string | null
+          genre: string
+          id?: string
+          is_active?: boolean | null
+          isbn?: string | null
+          language?: string | null
+          pages?: number | null
+          publication_year?: number | null
+          publisher?: string | null
+          tags?: string[] | null
+          tenant_id: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          author?: string
+          category?: string
+          cover_image?: string | null
+          created_at?: string | null
+          description?: string | null
+          edition?: string | null
+          genre?: string
+          id?: string
+          is_active?: boolean | null
+          isbn?: string | null
+          language?: string | null
+          pages?: number | null
+          publication_year?: number | null
+          publisher?: string | null
+          tags?: string[] | null
+          tenant_id?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      borrow_transactions: {
+        Row: {
+          borrower_id: string
+          copy_id: string
+          created_at: string | null
+          due_date: string
+          fine_amount: number | null
+          fine_paid: boolean | null
+          id: string
+          issue_date: string
+          issued_by: string
+          notes: string | null
+          renewal_count: number | null
+          return_date: string | null
+          returned_by: string | null
+          status: string
+          tenant_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          borrower_id: string
+          copy_id: string
+          created_at?: string | null
+          due_date: string
+          fine_amount?: number | null
+          fine_paid?: boolean | null
+          id?: string
+          issue_date?: string
+          issued_by: string
+          notes?: string | null
+          renewal_count?: number | null
+          return_date?: string | null
+          returned_by?: string | null
+          status?: string
+          tenant_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          borrower_id?: string
+          copy_id?: string
+          created_at?: string | null
+          due_date?: string
+          fine_amount?: number | null
+          fine_paid?: boolean | null
+          id?: string
+          issue_date?: string
+          issued_by?: string
+          notes?: string | null
+          renewal_count?: number | null
+          return_date?: string | null
+          returned_by?: string | null
+          status?: string
+          tenant_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "borrow_transactions_copy_id_fkey"
+            columns: ["copy_id"]
+            isOneToOne: false
+            referencedRelation: "book_copies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       class_subjects: {
         Row: {
           class_id: string
@@ -1082,6 +1266,101 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      library_reservations: {
+        Row: {
+          book_id: string
+          created_at: string | null
+          expiry_date: string
+          id: string
+          notified: boolean | null
+          reservation_date: string
+          status: string
+          tenant_id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          book_id: string
+          created_at?: string | null
+          expiry_date: string
+          id?: string
+          notified?: boolean | null
+          reservation_date?: string
+          status?: string
+          tenant_id: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          book_id?: string
+          created_at?: string | null
+          expiry_date?: string
+          id?: string
+          notified?: boolean | null
+          reservation_date?: string
+          status?: string
+          tenant_id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "library_reservations_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      library_settings: {
+        Row: {
+          created_at: string | null
+          damage_fine: number | null
+          fine_per_day: number | null
+          id: string
+          loss_fine: number | null
+          max_renewals: number | null
+          overdue_reminder_days: number | null
+          student_borrow_days: number | null
+          student_borrow_limit: number | null
+          teacher_borrow_days: number | null
+          teacher_borrow_limit: number | null
+          tenant_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          damage_fine?: number | null
+          fine_per_day?: number | null
+          id?: string
+          loss_fine?: number | null
+          max_renewals?: number | null
+          overdue_reminder_days?: number | null
+          student_borrow_days?: number | null
+          student_borrow_limit?: number | null
+          teacher_borrow_days?: number | null
+          teacher_borrow_limit?: number | null
+          tenant_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          damage_fine?: number | null
+          fine_per_day?: number | null
+          id?: string
+          loss_fine?: number | null
+          max_renewals?: number | null
+          overdue_reminder_days?: number | null
+          student_borrow_days?: number | null
+          student_borrow_limit?: number | null
+          teacher_borrow_days?: number | null
+          teacher_borrow_limit?: number | null
+          tenant_id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       marks: {
         Row: {
@@ -1938,6 +2217,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_overdue_fine: {
+        Args: {
+          due_date_param: string
+          return_date_param?: string
+          tenant_id_param?: string
+        }
+        Returns: number
+      }
       get_current_tenant_id: {
         Args: Record<PropertyKey, never>
         Returns: string

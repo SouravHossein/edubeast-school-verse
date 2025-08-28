@@ -2,29 +2,27 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { useTenant } from '@/hooks/useTenant';
 
 export interface Student {
   id: string;
+  user_id: string;
+  class_id: string;
   student_id: string;
   admission_number: string;
   roll_number?: string;
-  user_id: string;
-  class_id: string;
   admission_date: string;
   parent_name?: string;
   parent_phone?: string;
   parent_email?: string;
   emergency_contact?: string;
   medical_info?: string;
-  transport_info?: any;
-  fee_concession?: number;
+  transport_info?: Record<string, any>;
+  fee_concession: number;
   status: 'active' | 'inactive' | 'transferred';
   tenant_id?: string;
-  created_at: string;
-  updated_at: string;
-  // Joined data
-  profiles?: {
+  created_at?: string;
+  updated_at?: string;
+  profiles: {
     full_name: string;
     email: string;
     phone?: string;
@@ -32,24 +30,23 @@ export interface Student {
   };
   classes?: {
     name: string;
-    section?: string;
-    grade_level: number;
+    code: string;
   };
 }
 
-interface StudentInsertData {
+export interface CreateStudentData {
+  user_id: string;
+  class_id: string;
   student_id: string;
   admission_number: string;
   roll_number?: string;
-  user_id: string;
-  class_id: string;
   admission_date: string;
   parent_name?: string;
   parent_phone?: string;
   parent_email?: string;
   emergency_contact?: string;
   medical_info?: string;
-  transport_info?: any;
+  transport_info?: Record<string, any>;
   fee_concession?: number;
   status?: 'active' | 'inactive' | 'transferred';
 }
@@ -58,11 +55,8 @@ export const useStudents = () => {
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
-  const { tenant } = useTenant();
 
   const fetchStudents = async () => {
-    if (!tenant?.id) return;
-    
     try {
       setLoading(true);
       const { data, error } = await supabase
@@ -70,25 +64,24 @@ export const useStudents = () => {
         .select(`
           *,
           profiles!inner(full_name, email, phone, avatar_url),
-          classes(name, section, grade_level)
+          classes(name, code)
         `)
-        .eq('tenant_id', tenant.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      
-      // Type assertion to ensure proper typing
-      const typedStudents = (data || []).map(student => ({
-        ...student,
-        status: student.status as 'active' | 'inactive' | 'transferred'
+
+      // Transform the data to match the expected interface
+      const transformedData = data?.map(item => ({
+        ...item,
+        profiles: Array.isArray(item.profiles) ? item.profiles[0] : item.profiles
       })) as Student[];
-      
-      setStudents(typedStudents);
+
+      setStudents(transformedData || []);
     } catch (error) {
       console.error('Error fetching students:', error);
       toast({
         title: "Error",
-        description: "Failed to load students",
+        description: "Failed to fetch students. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -96,51 +89,45 @@ export const useStudents = () => {
     }
   };
 
-  const createStudent = async (studentData: StudentInsertData) => {
-    if (!tenant?.id) return null;
-
+  const createStudent = async (studentData: CreateStudentData): Promise<Student | null> => {
     try {
-      const insertData = {
-        ...studentData,
-        tenant_id: tenant.id,
-        status: studentData.status || 'active' as const
-      };
-
       const { data, error } = await supabase
         .from('students')
-        .insert(insertData)
+        .insert([studentData])
         .select(`
           *,
           profiles!inner(full_name, email, phone, avatar_url),
-          classes(name, section, grade_level)
+          classes(name, code)
         `)
         .single();
 
       if (error) throw error;
 
-      const typedStudent = {
+      const transformedData = {
         ...data,
-        status: data.status as 'active' | 'inactive' | 'transferred'
+        profiles: Array.isArray(data.profiles) ? data.profiles[0] : data.profiles
       } as Student;
 
-      setStudents(prev => [typedStudent, ...prev]);
+      setStudents(prev => [transformedData, ...prev]);
+      
       toast({
         title: "Success",
-        description: "Student created successfully",
+        description: "Student created successfully.",
       });
-      return typedStudent;
+
+      return transformedData;
     } catch (error) {
       console.error('Error creating student:', error);
       toast({
         title: "Error",
-        description: "Failed to create student",
+        description: "Failed to create student. Please try again.",
         variant: "destructive",
       });
       return null;
     }
   };
 
-  const updateStudent = async (id: string, updates: Partial<StudentInsertData>) => {
+  const updateStudent = async (id: string, updates: Partial<CreateStudentData>): Promise<Student | null> => {
     try {
       const { data, error } = await supabase
         .from('students')
@@ -149,37 +136,39 @@ export const useStudents = () => {
         .select(`
           *,
           profiles!inner(full_name, email, phone, avatar_url),
-          classes(name, section, grade_level)
+          classes(name, code)
         `)
         .single();
 
       if (error) throw error;
 
-      const typedStudent = {
+      const transformedData = {
         ...data,
-        status: data.status as 'active' | 'inactive' | 'transferred'
+        profiles: Array.isArray(data.profiles) ? data.profiles[0] : data.profiles
       } as Student;
 
-      setStudents(prev => 
-        prev.map(student => student.id === id ? typedStudent : student)
-      );
+      setStudents(prev => prev.map(student => 
+        student.id === id ? transformedData : student
+      ));
+
       toast({
         title: "Success",
-        description: "Student updated successfully",
+        description: "Student updated successfully.",
       });
-      return typedStudent;
+
+      return transformedData;
     } catch (error) {
       console.error('Error updating student:', error);
       toast({
         title: "Error",
-        description: "Failed to update student",
+        description: "Failed to update student. Please try again.",
         variant: "destructive",
       });
       return null;
     }
   };
 
-  const deleteStudent = async (id: string) => {
+  const deleteStudent = async (id: string): Promise<boolean> => {
     try {
       const { error } = await supabase
         .from('students')
@@ -189,16 +178,18 @@ export const useStudents = () => {
       if (error) throw error;
 
       setStudents(prev => prev.filter(student => student.id !== id));
+      
       toast({
         title: "Success",
-        description: "Student deleted successfully",
+        description: "Student deleted successfully.",
       });
+
       return true;
     } catch (error) {
       console.error('Error deleting student:', error);
       toast({
         title: "Error",
-        description: "Failed to delete student",
+        description: "Failed to delete student. Please try again.",
         variant: "destructive",
       });
       return false;
@@ -207,7 +198,7 @@ export const useStudents = () => {
 
   useEffect(() => {
     fetchStudents();
-  }, [tenant?.id]);
+  }, []);
 
   return {
     students,
@@ -215,6 +206,6 @@ export const useStudents = () => {
     createStudent,
     updateStudent,
     deleteStudent,
-    refetch: fetchStudents
+    refetch: fetchStudents,
   };
 };

@@ -2,7 +2,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { useTenant } from '@/hooks/useTenant';
 
 export interface AttendanceRecord {
   id: string;
@@ -15,40 +14,37 @@ export interface AttendanceRecord {
   remarks?: string;
   marked_by: string;
   tenant_id?: string;
-  created_at: string;
-  updated_at: string;
-  // Joined data
-  students?: {
+  created_at?: string;
+  updated_at?: string;
+  students: {
     student_id: string;
-    roll_number?: string;
-    profiles?: {
+    profiles: {
       full_name: string;
     };
   };
-  classes?: {
+  classes: {
     name: string;
-    section?: string;
+    code: string;
   };
 }
 
-interface AttendanceInsertData {
+export interface CreateAttendanceData {
   student_id: string;
   class_id: string;
   date: string;
   status: 'present' | 'absent' | 'late';
   check_in_time?: string;
+  check_out_time?: string;
   remarks?: string;
+  marked_by: string;
 }
 
 export const useAttendance = () => {
-  const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
+  const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
-  const { tenant } = useTenant();
 
-  const fetchAttendance = async (date?: string, classId?: string) => {
-    if (!tenant?.id) return;
-    
+  const fetchAttendance = async (classId?: string, date?: string) => {
     try {
       setLoading(true);
       let query = supabase
@@ -57,36 +53,37 @@ export const useAttendance = () => {
           *,
           students!inner(
             student_id,
-            roll_number,
             profiles!inner(full_name)
           ),
-          classes(name, section)
+          classes!inner(name, code)
         `)
-        .eq('tenant_id', tenant.id);
+        .order('date', { ascending: false });
 
-      if (date) {
-        query = query.eq('date', date);
-      }
       if (classId) {
         query = query.eq('class_id', classId);
       }
 
-      const { data, error } = await query.order('date', { ascending: false });
+      if (date) {
+        query = query.eq('date', date);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
-      
-      // Type assertion to ensure proper typing
-      const typedAttendance = (data || []).map(record => ({
-        ...record,
-        status: record.status as 'present' | 'absent' | 'late'
+
+      // Transform the data to match the expected interface
+      const transformedData = data?.map(item => ({
+        ...item,
+        students: Array.isArray(item.students) ? item.students[0] : item.students,
+        classes: Array.isArray(item.classes) ? item.classes[0] : item.classes
       })) as AttendanceRecord[];
-      
-      setAttendance(typedAttendance);
+
+      setAttendanceRecords(transformedData || []);
     } catch (error) {
       console.error('Error fetching attendance:', error);
       toast({
         title: "Error",
-        description: "Failed to load attendance records",
+        description: "Failed to fetch attendance records. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -94,146 +91,131 @@ export const useAttendance = () => {
     }
   };
 
-  const markAttendance = async (attendanceData: AttendanceInsertData) => {
-    if (!tenant?.id) return null;
-
+  const markAttendance = async (attendanceData: CreateAttendanceData): Promise<AttendanceRecord | null> => {
     try {
       const { data, error } = await supabase
         .from('attendance')
-        .upsert({
-          ...attendanceData,
-          tenant_id: tenant.id,
-          marked_by: (await supabase.auth.getUser()).data.user?.id
-        }, {
-          onConflict: 'student_id,date',
-          ignoreDuplicates: false
-        })
+        .insert([attendanceData])
         .select(`
           *,
           students!inner(
             student_id,
-            roll_number,
             profiles!inner(full_name)
           ),
-          classes(name, section)
+          classes!inner(name, code)
         `)
         .single();
 
       if (error) throw error;
 
-      const typedRecord = {
+      const transformedData = {
         ...data,
-        status: data.status as 'present' | 'absent' | 'late'
+        students: Array.isArray(data.students) ? data.students[0] : data.students,
+        classes: Array.isArray(data.classes) ? data.classes[0] : data.classes
       } as AttendanceRecord;
 
-      setAttendance(prev => {
-        const existing = prev.findIndex(a => 
-          a.student_id === typedRecord.student_id && a.date === typedRecord.date
-        );
-        if (existing >= 0) {
-          const updated = [...prev];
-          updated[existing] = typedRecord;
-          return updated;
-        }
-        return [typedRecord, ...prev];
+      setAttendanceRecords(prev => [transformedData, ...prev]);
+      
+      toast({
+        title: "Success",
+        description: "Attendance marked successfully.",
       });
 
-      return typedRecord;
+      return transformedData;
     } catch (error) {
       console.error('Error marking attendance:', error);
       toast({
         title: "Error",
-        description: "Failed to mark attendance",
+        description: "Failed to mark attendance. Please try again.",
         variant: "destructive",
       });
       return null;
     }
   };
 
-  const bulkMarkAttendance = async (records: AttendanceInsertData[]) => {
-    if (!tenant?.id) return false;
-
+  const updateAttendance = async (id: string, updates: Partial<CreateAttendanceData>): Promise<AttendanceRecord | null> => {
     try {
-      const userId = (await supabase.auth.getUser()).data.user?.id;
-      const attendanceRecords = records.map(record => ({
-        ...record,
-        tenant_id: tenant.id,
-        marked_by: userId
-      }));
-
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('attendance')
-        .upsert(attendanceRecords, {
-          onConflict: 'student_id,date',
-          ignoreDuplicates: false
-        });
+        .update(updates)
+        .eq('id', id)
+        .select(`
+          *,
+          students!inner(
+            student_id,
+            profiles!inner(full_name)
+          ),
+          classes!inner(name, code)
+        `)
+        .single();
 
       if (error) throw error;
 
+      const transformedData = {
+        ...data,
+        students: Array.isArray(data.students) ? data.students[0] : data.students,
+        classes: Array.isArray(data.classes) ? data.classes[0] : data.classes
+      } as AttendanceRecord;
+
+      setAttendanceRecords(prev => prev.map(record => 
+        record.id === id ? transformedData : record
+      ));
+
       toast({
         title: "Success",
-        description: `Attendance marked for ${records.length} students`,
+        description: "Attendance updated successfully.",
       });
-      
-      // Refresh data
-      await fetchAttendance();
-      return true;
+
+      return transformedData;
     } catch (error) {
-      console.error('Error bulk marking attendance:', error);
+      console.error('Error updating attendance:', error);
       toast({
         title: "Error",
-        description: "Failed to mark attendance for some students",
+        description: "Failed to update attendance. Please try again.",
+        variant: "destructive",
+      });
+      return null;
+    }
+  };
+
+  const deleteAttendance = async (id: string): Promise<boolean> => {
+    try {
+      const { error } = await supabase
+        .from('attendance')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setAttendanceRecords(prev => prev.filter(record => record.id !== id));
+      
+      toast({
+        title: "Success",
+        description: "Attendance record deleted successfully.",
+      });
+
+      return true;
+    } catch (error) {
+      console.error('Error deleting attendance:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete attendance record. Please try again.",
         variant: "destructive",
       });
       return false;
     }
   };
 
-  const getAttendanceStats = async (startDate: string, endDate: string, classId?: string) => {
-    if (!tenant?.id) return null;
-
-    try {
-      let query = supabase
-        .from('attendance')
-        .select('status, student_id')
-        .eq('tenant_id', tenant.id)
-        .gte('date', startDate)
-        .lte('date', endDate);
-
-      if (classId) {
-        query = query.eq('class_id', classId);
-      }
-
-      const { data, error } = await query;
-      if (error) throw error;
-
-      const stats = data?.reduce((acc, record) => {
-        acc[record.status] = (acc[record.status] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>) || {};
-
-      return {
-        present: stats.present || 0,
-        absent: stats.absent || 0,
-        late: stats.late || 0,
-        total: data?.length || 0
-      };
-    } catch (error) {
-      console.error('Error getting attendance stats:', error);
-      return null;
-    }
-  };
-
   useEffect(() => {
     fetchAttendance();
-  }, [tenant?.id]);
+  }, []);
 
   return {
-    attendance,
+    attendanceRecords,
     loading,
     markAttendance,
-    bulkMarkAttendance,
-    getAttendanceStats,
-    refetch: fetchAttendance
+    updateAttendance,
+    deleteAttendance,
+    refetch: fetchAttendance,
   };
 };
