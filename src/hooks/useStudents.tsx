@@ -37,6 +37,23 @@ export interface Student {
   };
 }
 
+interface StudentInsertData {
+  student_id: string;
+  admission_number: string;
+  roll_number?: string;
+  user_id: string;
+  class_id: string;
+  admission_date: string;
+  parent_name?: string;
+  parent_phone?: string;
+  parent_email?: string;
+  emergency_contact?: string;
+  medical_info?: string;
+  transport_info?: any;
+  fee_concession?: number;
+  status?: 'active' | 'inactive' | 'transferred';
+}
+
 export const useStudents = () => {
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
@@ -59,7 +76,14 @@ export const useStudents = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setStudents(data || []);
+      
+      // Type assertion to ensure proper typing
+      const typedStudents = (data || []).map(student => ({
+        ...student,
+        status: student.status as 'active' | 'inactive' | 'transferred'
+      })) as Student[];
+      
+      setStudents(typedStudents);
     } catch (error) {
       console.error('Error fetching students:', error);
       toast({
@@ -72,16 +96,19 @@ export const useStudents = () => {
     }
   };
 
-  const createStudent = async (studentData: Partial<Student>) => {
+  const createStudent = async (studentData: StudentInsertData) => {
     if (!tenant?.id) return null;
 
     try {
+      const insertData = {
+        ...studentData,
+        tenant_id: tenant.id,
+        status: studentData.status || 'active' as const
+      };
+
       const { data, error } = await supabase
         .from('students')
-        .insert({
-          ...studentData,
-          tenant_id: tenant.id
-        })
+        .insert(insertData)
         .select(`
           *,
           profiles!inner(full_name, email, phone, avatar_url),
@@ -91,12 +118,17 @@ export const useStudents = () => {
 
       if (error) throw error;
 
-      setStudents(prev => [data, ...prev]);
+      const typedStudent = {
+        ...data,
+        status: data.status as 'active' | 'inactive' | 'transferred'
+      } as Student;
+
+      setStudents(prev => [typedStudent, ...prev]);
       toast({
         title: "Success",
         description: "Student created successfully",
       });
-      return data;
+      return typedStudent;
     } catch (error) {
       console.error('Error creating student:', error);
       toast({
@@ -108,7 +140,7 @@ export const useStudents = () => {
     }
   };
 
-  const updateStudent = async (id: string, updates: Partial<Student>) => {
+  const updateStudent = async (id: string, updates: Partial<StudentInsertData>) => {
     try {
       const { data, error } = await supabase
         .from('students')
@@ -123,14 +155,19 @@ export const useStudents = () => {
 
       if (error) throw error;
 
+      const typedStudent = {
+        ...data,
+        status: data.status as 'active' | 'inactive' | 'transferred'
+      } as Student;
+
       setStudents(prev => 
-        prev.map(student => student.id === id ? data : student)
+        prev.map(student => student.id === id ? typedStudent : student)
       );
       toast({
         title: "Success",
         description: "Student updated successfully",
       });
-      return data;
+      return typedStudent;
     } catch (error) {
       console.error('Error updating student:', error);
       toast({

@@ -31,6 +31,15 @@ export interface AttendanceRecord {
   };
 }
 
+interface AttendanceInsertData {
+  student_id: string;
+  class_id: string;
+  date: string;
+  status: 'present' | 'absent' | 'late';
+  check_in_time?: string;
+  remarks?: string;
+}
+
 export const useAttendance = () => {
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -65,7 +74,14 @@ export const useAttendance = () => {
       const { data, error } = await query.order('date', { ascending: false });
 
       if (error) throw error;
-      setAttendance(data || []);
+      
+      // Type assertion to ensure proper typing
+      const typedAttendance = (data || []).map(record => ({
+        ...record,
+        status: record.status as 'present' | 'absent' | 'late'
+      })) as AttendanceRecord[];
+      
+      setAttendance(typedAttendance);
     } catch (error) {
       console.error('Error fetching attendance:', error);
       toast({
@@ -78,14 +94,7 @@ export const useAttendance = () => {
     }
   };
 
-  const markAttendance = async (attendanceData: {
-    student_id: string;
-    class_id: string;
-    date: string;
-    status: 'present' | 'absent' | 'late';
-    check_in_time?: string;
-    remarks?: string;
-  }) => {
+  const markAttendance = async (attendanceData: AttendanceInsertData) => {
     if (!tenant?.id) return null;
 
     try {
@@ -112,19 +121,24 @@ export const useAttendance = () => {
 
       if (error) throw error;
 
+      const typedRecord = {
+        ...data,
+        status: data.status as 'present' | 'absent' | 'late'
+      } as AttendanceRecord;
+
       setAttendance(prev => {
         const existing = prev.findIndex(a => 
-          a.student_id === data.student_id && a.date === data.date
+          a.student_id === typedRecord.student_id && a.date === typedRecord.date
         );
         if (existing >= 0) {
           const updated = [...prev];
-          updated[existing] = data;
+          updated[existing] = typedRecord;
           return updated;
         }
-        return [data, ...prev];
+        return [typedRecord, ...prev];
       });
 
-      return data;
+      return typedRecord;
     } catch (error) {
       console.error('Error marking attendance:', error);
       toast({
@@ -136,14 +150,7 @@ export const useAttendance = () => {
     }
   };
 
-  const bulkMarkAttendance = async (records: Array<{
-    student_id: string;
-    class_id: string;
-    date: string;
-    status: 'present' | 'absent' | 'late';
-    check_in_time?: string;
-    remarks?: string;
-  }>) => {
+  const bulkMarkAttendance = async (records: AttendanceInsertData[]) => {
     if (!tenant?.id) return false;
 
     try {
