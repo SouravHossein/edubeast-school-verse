@@ -16,7 +16,7 @@ import { BookForm } from './BookForm';
 import { useLibrary, Book } from '@/hooks/useLibrary';
 
 export const BookCatalog = () => {
-  const { books, bookCopies, loading, createBook } = useLibrary();
+  const { books, bookCopies, isLoading, addBook } = useLibrary();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedGenre, setSelectedGenre] = useState('');
@@ -46,7 +46,12 @@ export const BookCatalog = () => {
   const categories = [...new Set(books.map(book => book.category))];
   const genres = [...new Set(books.map(book => book.genre))];
 
-  if (loading) {
+  const handleAddBook = async (bookData: Omit<Book, 'id' | 'tenant_id' | 'created_at' | 'updated_at'>) => {
+    await addBook(bookData);
+    setShowBookForm(false);
+  };
+
+  if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -210,9 +215,9 @@ export const BookCatalog = () => {
       )}
 
       <BookForm
-        open={showBookForm}
-        onOpenChange={setShowBookForm}
-        onSubmit={createBook}
+        isOpen={showBookForm}
+        onClose={() => setShowBookForm(false)}
+        onSubmit={handleAddBook}
       />
     </div>
   );
