@@ -1,28 +1,32 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
 export interface AttendanceRecord {
   id: string;
   student_id: string;
   class_id: string;
   date: string;
-  status: 'present' | 'absent' | 'late';
+  status: 'present' | 'absent' | 'late' | 'excused';
   check_in_time?: string;
   check_out_time?: string;
-  remarks?: string;
   marked_by: string;
-  tenant_id?: string;
+  remarks?: string;
+  tenant_id: string;
   created_at?: string;
   updated_at?: string;
-  students: {
+  students?: {
+    id: string;
     student_id: string;
-    profiles: {
+    profiles?: {
       full_name: string;
+      avatar_url?: string;
     };
   };
-  classes: {
+  classes?: {
+    id: string;
     name: string;
     code: string;
   };
@@ -32,109 +36,157 @@ export interface CreateAttendanceData {
   student_id: string;
   class_id: string;
   date: string;
-  status: 'present' | 'absent' | 'late';
+  status: 'present' | 'absent' | 'late' | 'excused';
   check_in_time?: string;
   check_out_time?: string;
   remarks?: string;
-  marked_by: string;
+}
+
+export interface BulkAttendanceData {
+  class_id: string;
+  date: string;
+  records: {
+    student_id: string;
+    status: 'present' | 'absent' | 'late' | 'excused';
+    check_in_time?: string;
+    remarks?: string;
+  }[];
 }
 
 export const useAttendance = () => {
-  const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
-  const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
-
-  const fetchAttendance = async (classId?: string, date?: string) => {
-    try {
-      setLoading(true);
-      let query = supabase
-        .from('attendance')
-        .select(`
-          *,
-          students!inner(
-            student_id,
-            profiles!inner(full_name)
-          ),
-          classes!inner(name, code)
-        `)
-        .order('date', { ascending: false });
-
-      if (classId) {
-        query = query.eq('class_id', classId);
-      }
-
-      if (date) {
-        query = query.eq('date', date);
-      }
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-
-      // Transform the data to match the expected interface
-      const transformedData = data?.map(item => ({
-        ...item,
-        students: Array.isArray(item.students) ? item.students[0] : item.students,
-        classes: Array.isArray(item.classes) ? item.classes[0] : item.classes
-      })) as AttendanceRecord[];
-
-      setAttendanceRecords(transformedData || []);
-    } catch (error) {
-      console.error('Error fetching attendance:', error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch attendance records. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const markAttendance = async (attendanceData: CreateAttendanceData): Promise<AttendanceRecord | null> => {
-    try {
+  const queryClient = useQueryClient();
+  
+  // Fetch attendance records
+  const { 
+    data: attendanceRecords = [], 
+    isLoading: loading,
+    refetch
+  } = useQuery({
+    queryKey: ['attendance'],
+    queryFn: async () => {
       const { data, error } = await supabase
         .from('attendance')
-        .insert([attendanceData])
         .select(`
           *,
           students!inner(
+            id,
             student_id,
-            profiles!inner(full_name)
+            profiles!inner(
+              full_name,
+              avatar_url
+            )
           ),
-          classes!inner(name, code)
+          classes!inner(
+            id,
+            name,
+            code
+          )
+        `)
+        .order('date', { ascending: false })
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        console.error('Error fetching attendance:', error);
+        throw error;
+      }
+      
+      return data as AttendanceRecord[];
+    },
+  });
+
+  // Mark single attendance
+  const markAttendanceMutation = useMutation({
+    mutationFn: async (attendanceData: CreateAttendanceData) => {
+      const { data, error } = await supabase
+        .from('attendance')
+        .insert([{
+          ...attendanceData,
+          marked_by: (await supabase.auth.getUser()).data.user?.id || '',
+        }])
+        .select(`
+          *,
+          students!inner(
+            id,
+            student_id,
+            profiles!inner(
+              full_name,
+              avatar_url
+            )
+          ),
+          classes!inner(
+            id,
+            name,
+            code
+          )
         `)
         .single();
-
-      if (error) throw error;
-
-      const transformedData = {
-        ...data,
-        students: Array.isArray(data.students) ? data.students[0] : data.students,
-        classes: Array.isArray(data.classes) ? data.classes[0] : data.classes
-      } as AttendanceRecord;
-
-      setAttendanceRecords(prev => [transformedData, ...prev]);
       
-      toast({
-        title: "Success",
-        description: "Attendance marked successfully.",
-      });
-
-      return transformedData;
-    } catch (error) {
+      if (error) throw error;
+      return data as AttendanceRecord;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['attendance'] });
+      toast.success('Attendance marked successfully');
+    },
+    onError: (error) => {
       console.error('Error marking attendance:', error);
-      toast({
-        title: "Error",
-        description: "Failed to mark attendance. Please try again.",
-        variant: "destructive",
-      });
-      return null;
-    }
-  };
+      toast.error('Failed to mark attendance');
+    },
+  });
 
-  const updateAttendance = async (id: string, updates: Partial<CreateAttendanceData>): Promise<AttendanceRecord | null> => {
-    try {
+  // Bulk mark attendance
+  const bulkMarkAttendanceMutation = useMutation({
+    mutationFn: async (bulkData: BulkAttendanceData) => {
+      const currentUser = await supabase.auth.getUser();
+      const userId = currentUser.data.user?.id;
+      
+      if (!userId) {
+        throw new Error('User not authenticated');
+      }
+
+      const attendanceRecords = bulkData.records.map(record => ({
+        ...record,
+        class_id: bulkData.class_id,
+        date: bulkData.date,
+        marked_by: userId,
+      }));
+
+      const { data, error } = await supabase
+        .from('attendance')
+        .insert(attendanceRecords)
+        .select(`
+          *,
+          students!inner(
+            id,
+            student_id,
+            profiles!inner(
+              full_name,
+              avatar_url
+            )
+          ),
+          classes!inner(
+            id,
+            name,
+            code
+          )
+        `);
+      
+      if (error) throw error;
+      return data as AttendanceRecord[];
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['attendance'] });
+      toast.success(`Bulk attendance marked for ${data.length} students`);
+    },
+    onError: (error) => {
+      console.error('Error marking bulk attendance:', error);
+      toast.error('Failed to mark bulk attendance');
+    },
+  });
+
+  // Update attendance
+  const updateAttendanceMutation = useMutation({
+    mutationFn: async ({ id, updates }: { id: string; updates: Partial<AttendanceRecord> }) => {
       const { data, error } = await supabase
         .from('attendance')
         .update(updates)
@@ -142,80 +194,102 @@ export const useAttendance = () => {
         .select(`
           *,
           students!inner(
+            id,
             student_id,
-            profiles!inner(full_name)
+            profiles!inner(
+              full_name,
+              avatar_url
+            )
           ),
-          classes!inner(name, code)
+          classes!inner(
+            id,
+            name,
+            code
+          )
         `)
         .single();
-
+      
       if (error) throw error;
-
-      const transformedData = {
-        ...data,
-        students: Array.isArray(data.students) ? data.students[0] : data.students,
-        classes: Array.isArray(data.classes) ? data.classes[0] : data.classes
-      } as AttendanceRecord;
-
-      setAttendanceRecords(prev => prev.map(record => 
-        record.id === id ? transformedData : record
-      ));
-
-      toast({
-        title: "Success",
-        description: "Attendance updated successfully.",
-      });
-
-      return transformedData;
-    } catch (error) {
+      return data as AttendanceRecord;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['attendance'] });
+      toast.success('Attendance updated successfully');
+    },
+    onError: (error) => {
       console.error('Error updating attendance:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update attendance. Please try again.",
-        variant: "destructive",
-      });
-      return null;
-    }
-  };
+      toast.error('Failed to update attendance');
+    },
+  });
 
-  const deleteAttendance = async (id: string): Promise<boolean> => {
-    try {
+  // Delete attendance
+  const deleteAttendanceMutation = useMutation({
+    mutationFn: async (id: string) => {
       const { error } = await supabase
         .from('attendance')
         .delete()
         .eq('id', id);
-
-      if (error) throw error;
-
-      setAttendanceRecords(prev => prev.filter(record => record.id !== id));
       
-      toast({
-        title: "Success",
-        description: "Attendance record deleted successfully.",
-      });
-
-      return true;
-    } catch (error) {
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['attendance'] });
+      toast.success('Attendance deleted successfully');
+    },
+    onError: (error) => {
       console.error('Error deleting attendance:', error);
-      toast({
-        title: "Error",
-        description: "Failed to delete attendance record. Please try again.",
-        variant: "destructive",
-      });
-      return false;
-    }
-  };
+      toast.error('Failed to delete attendance');
+    },
+  });
 
-  useEffect(() => {
-    fetchAttendance();
-  }, []);
+  // Refetch function with optional filters
+  const refetchAttendance = async (classId?: string, date?: string) => {
+    let query = supabase
+      .from('attendance')
+      .select(`
+        *,
+        students!inner(
+          id,
+          student_id,
+          profiles!inner(
+            full_name,
+            avatar_url
+          )
+        ),
+        classes!inner(
+          id,
+          name,
+          code
+        )
+      `)
+      .order('date', { ascending: false });
+
+    if (classId) {
+      query = query.eq('class_id', classId);
+    }
+    
+    if (date) {
+      query = query.eq('date', date);
+    }
+
+    const { data, error } = await query;
+    
+    if (error) {
+      console.error('Error refetching attendance:', error);
+      throw error;
+    }
+    
+    return data as AttendanceRecord[];
+  };
 
   return {
     attendanceRecords,
     loading,
-    markAttendance,
-    updateAttendance,
-    deleteAttendance,
-    refetch: fetchAttendance,
+    markAttendance: markAttendanceMutation.mutateAsync,
+    bulkMarkAttendance: bulkMarkAttendanceMutation.mutateAsync,
+    updateAttendance: (id: string, updates: Partial<AttendanceRecord>) => 
+      updateAttendanceMutation.mutateAsync({ id, updates }),
+    deleteAttendance: deleteAttendanceMutation.mutateAsync,
+    refetch: refetchAttendance,
   };
 };

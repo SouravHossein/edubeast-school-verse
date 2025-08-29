@@ -1,234 +1,239 @@
 
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState, useMemo } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Plus, Edit, Trash2, Download, Filter } from 'lucide-react';
-import { Student } from '@/hooks/useStudents';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Search, Filter, Download, Eye, Edit, Trash2 } from 'lucide-react';
+import { useStudents } from '@/hooks/useStudents';
 
 interface StudentListViewProps {
-  students: Student[];
-  loading: boolean;
-  onAddStudent: () => void;
-  onEditStudent: (student: Student) => void;
-  onDeleteStudent: (id: string) => void;
-  classes: Array<{ id: string; name: string; section?: string }>;
+  onEditStudent?: (student: any) => void;
+  onViewStudent?: (student: any) => void;
+  onDeleteStudent?: (studentId: string) => void;
 }
 
 export const StudentListView: React.FC<StudentListViewProps> = ({
-  students,
-  loading,
-  onAddStudent,
   onEditStudent,
+  onViewStudent,
   onDeleteStudent,
-  classes
 }) => {
+  const { students, loading } = useStudents();
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterClass, setFilterClass] = useState('');
-  const [filterStatus, setFilterStatus] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [classFilter, setClassFilter] = useState('all');
 
-  const filteredStudents = students.filter(student => {
-    const matchesSearch = 
-      student.profiles?.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.student_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.admission_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.roll_number?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesClass = !filterClass || student.class_id === filterClass;
-    const matchesStatus = !filterStatus || student.status === filterStatus;
-    
-    return matchesSearch && matchesClass && matchesStatus;
-  });
+  const filteredStudents = useMemo(() => {
+    return students.filter((student) => {
+      const matchesSearch = 
+        student.profiles?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        student.student_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        student.admission_number.toLowerCase().includes(searchTerm.toLowerCase());
 
-  const getStatusBadge = (status: string) => {
-    const variants = {
-      active: 'default',
-      inactive: 'secondary',
-      transferred: 'outline'
-    } as const;
-    
-    return (
-      <Badge variant={variants[status as keyof typeof variants] || 'outline'}>
-        {status.charAt(0).toUpperCase() + status.slice(1)}
-      </Badge>
-    );
-  };
+      const matchesStatus = statusFilter === 'all' || student.status === statusFilter;
+      
+      const matchesClass = classFilter === 'all' || student.classes?.id === classFilter;
 
-  const exportToCSV = () => {
-    const headers = ['Student ID', 'Name', 'Class', 'Roll Number', 'Parent Name', 'Phone', 'Email', 'Status'];
-    const csvData = [
-      headers,
-      ...filteredStudents.map(student => [
-        student.student_id,
-        student.profiles?.full_name || '',
-        student.classes?.name || '',
-        student.roll_number || '',
-        student.parent_name || '',
-        student.parent_phone || '',
-        student.parent_email || '',
-        student.status
-      ])
-    ];
-
-    const csvContent = csvData.map(row => row.join(',')).join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'students.csv';
-    a.click();
-    URL.revokeObjectURL(url);
-  };
+      return matchesSearch && matchesStatus && matchesClass;
+    });
+  }, [students, searchTerm, statusFilter, classFilter]);
 
   if (loading) {
     return (
-      <Card>
-        <CardContent className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Loading students...</p>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="space-y-4">
+        {[...Array(6)].map((_, i) => (
+          <Card key={i} className="animate-pulse">
+            <CardContent className="p-6">
+              <div className="flex items-center space-x-4">
+                <div className="w-12 h-12 bg-muted rounded-full"></div>
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 bg-muted rounded w-1/4"></div>
+                  <div className="h-3 bg-muted rounded w-1/2"></div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     );
   }
 
+  const uniqueClasses = Array.from(
+    new Set(students.map(s => s.classes?.id).filter(Boolean))
+  ).map(id => students.find(s => s.classes?.id === id)?.classes).filter(Boolean);
+
+  const getInitials = (name: string) => {
+    return name
+      ?.split(' ')
+      .map(word => word[0])
+      .join('')
+      .toUpperCase() || 'S';
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'active':
+        return 'bg-green-100 text-green-800';
+      case 'inactive':
+        return 'bg-red-100 text-red-800';
+      case 'suspended':
+        return 'bg-yellow-100 text-yellow-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <span>Students ({filteredStudents.length})</span>
-          <div className="flex items-center gap-2">
-            <Button onClick={exportToCSV} variant="outline" size="sm">
-              <Download className="h-4 w-4 mr-2" />
-              Export CSV
-            </Button>
-            <Button onClick={onAddStudent}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Student
-            </Button>
-          </div>
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-4 mb-6">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search by name, ID, or roll number..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-          
-          <Select value={filterClass} onValueChange={setFilterClass}>
-            <SelectTrigger className="w-full sm:w-[180px]">
-              <SelectValue placeholder="All Classes" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="">All Classes</SelectItem>
-              {classes.map((cls) => (
-                <SelectItem key={cls.id} value={cls.id}>
-                  {cls.name} {cls.section && `- ${cls.section}`}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select value={filterStatus} onValueChange={setFilterStatus}>
-            <SelectTrigger className="w-full sm:w-[180px]">
-              <SelectValue placeholder="All Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="">All Status</SelectItem>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="inactive">Inactive</SelectItem>
-              <SelectItem value="transferred">Transferred</SelectItem>
-            </SelectContent>
-          </Select>
+    <div className="space-y-6">
+      {/* Search and Filters */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+          <Input
+            placeholder="Search students..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
         </div>
+        
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-full sm:w-48">
+            <SelectValue placeholder="Filter by status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Status</SelectItem>
+            <SelectItem value="active">Active</SelectItem>
+            <SelectItem value="inactive">Inactive</SelectItem>
+            <SelectItem value="suspended">Suspended</SelectItem>
+          </SelectContent>
+        </Select>
 
-        {/* Students Table */}
-        <div className="rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Student</TableHead>
-                <TableHead>Student ID</TableHead>
-                <TableHead>Class</TableHead>
-                <TableHead>Roll No.</TableHead>
-                <TableHead>Parent Contact</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredStudents.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8">
-                    <p className="text-muted-foreground">No students found</p>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredStudents.map((student) => (
-                  <TableRow key={student.id}>
-                    <TableCell>
-                      <div className="flex items-center space-x-3">
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage src={student.profiles?.avatar_url} />
-                          <AvatarFallback>
-                            {student.profiles?.full_name?.split(' ').map(n => n[0]).join('') || 'S'}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="font-medium">{student.profiles?.full_name}</p>
-                          <p className="text-sm text-muted-foreground">{student.profiles?.email}</p>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="font-mono">{student.student_id}</TableCell>
-                    <TableCell>
-                      {student.classes?.name} {student.classes?.section && `- ${student.classes.section}`}
-                    </TableCell>
-                    <TableCell>{student.roll_number || '-'}</TableCell>
-                    <TableCell>
+        <Select value={classFilter} onValueChange={setClassFilter}>
+          <SelectTrigger className="w-full sm:w-48">
+            <SelectValue placeholder="Filter by class" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Classes</SelectItem>
+            {uniqueClasses.map((cls) => (
+              <SelectItem key={cls?.id} value={cls?.id || ''}>
+                {cls?.name || 'Unknown Class'}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Button variant="outline" size="sm">
+          <Download className="h-4 w-4 mr-2" />
+          Export
+        </Button>
+      </div>
+
+      {/* Results Count */}
+      <div className="text-sm text-muted-foreground">
+        Showing {filteredStudents.length} of {students.length} students
+      </div>
+
+      {/* Student Cards */}
+      <div className="space-y-4">
+        {filteredStudents.map((student) => (
+          <Card key={student.id} className="hover:shadow-md transition-shadow">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <Avatar className="h-12 w-12">
+                    <AvatarImage src={student.profiles?.avatar_url || ''} />
+                    <AvatarFallback>
+                      {getInitials(student.profiles?.full_name || '')}
+                    </AvatarFallback>
+                  </Avatar>
+                  
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center space-x-3">
+                      <h3 className="text-lg font-semibold truncate">
+                        {student.profiles?.full_name || 'Unknown'}
+                      </h3>
+                      <Badge className={getStatusColor(student.status)}>
+                        {student.status}
+                      </Badge>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-2 text-sm text-muted-foreground">
                       <div>
-                        <p className="font-medium">{student.parent_name}</p>
-                        <p className="text-sm text-muted-foreground">{student.parent_phone}</p>
+                        <span className="font-medium">Student ID:</span> {student.student_id}
                       </div>
-                    </TableCell>
-                    <TableCell>{getStatusBadge(student.status)}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => onEditStudent(student)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => onDeleteStudent(student.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                      <div>
+                        <span className="font-medium">Roll No:</span> {student.roll_number || 'N/A'}
                       </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </CardContent>
-    </Card>
+                      <div>
+                        <span className="font-medium">Class:</span> {student.classes?.name || 'Not Assigned'}
+                      </div>
+                      <div>
+                        <span className="font-medium">Admission:</span> {student.admission_number}
+                      </div>
+                    </div>
+
+                    {student.parent_name && (
+                      <div className="mt-2 text-sm text-muted-foreground">
+                        <span className="font-medium">Parent:</span> {student.parent_name}
+                        {student.parent_phone && (
+                          <span className="ml-4">
+                            <span className="font-medium">Phone:</span> {student.parent_phone}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  {onViewStudent && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onViewStudent(student)}
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                  )}
+                  {onEditStudent && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onEditStudent(student)}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                  )}
+                  {onDeleteStudent && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onDeleteStudent(student.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {filteredStudents.length === 0 && (
+        <Card>
+          <CardContent className="p-12 text-center">
+            <div className="text-muted-foreground">
+              <Filter className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <h3 className="text-lg font-semibold mb-2">No students found</h3>
+              <p>Try adjusting your search criteria or filters.</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
   );
 };

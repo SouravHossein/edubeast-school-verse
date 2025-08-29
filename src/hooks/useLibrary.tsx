@@ -1,7 +1,9 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
 
 export interface Book {
   id: string;
@@ -11,8 +13,8 @@ export interface Book {
   isbn?: string;
   genre: string;
   publisher?: string;
-  edition?: string;
   publication_year?: number;
+  edition?: string;
   language?: string;
   pages?: number;
   cover_image?: string;
@@ -30,9 +32,9 @@ export interface BookCopy {
   copy_number: string;
   barcode?: string;
   rfid_tag?: string;
-  condition: string;
+  condition: 'excellent' | 'good' | 'fair' | 'poor' | 'damaged';
   shelf_location?: string;
-  status: string;
+  status: 'available' | 'borrowed' | 'reserved' | 'maintenance' | 'lost';
   acquisition_date?: string;
   price?: number;
   notes?: string;
@@ -40,27 +42,24 @@ export interface BookCopy {
   updated_at?: string;
 }
 
-export interface BorrowTransaction {
+export interface LibraryTransaction {
   id: string;
   tenant_id: string;
-  copy_id: string;
-  borrower_id: string;
-  issued_by: string;
-  issue_date: string;
-  due_date: string;
+  book_copy_id: string;
+  user_id: string;
+  transaction_type: 'borrow' | 'return' | 'renew' | 'reserve';
+  borrow_date?: string;
+  due_date?: string;
   return_date?: string;
-  returned_by?: string;
-  status: string;
   fine_amount?: number;
   fine_paid?: boolean;
-  renewal_count?: number;
   notes?: string;
   created_at?: string;
   updated_at?: string;
 }
 
 export interface LibrarySettings {
-  id: string;
+  id?: string;
   tenant_id: string;
   student_borrow_limit?: number;
   teacher_borrow_limit?: number;
@@ -75,216 +74,500 @@ export interface LibrarySettings {
   updated_at?: string;
 }
 
-export const useLibrary = () => {
-  const [books, setBooks] = useState<Book[]>([]);
-  const [bookCopies, setBookCopies] = useState<BookCopy[]>([]);
-  const [borrowTransactions, setBorrowTransactions] = useState<BorrowTransaction[]>([]);
-  const [librarySettings, setLibrarySettings] = useState<LibrarySettings>({} as LibrarySettings);
-  const [isLoading, setIsLoading] = useState(true);
-  const { toast } = useToast();
+export interface LibraryReservation {
+  id: string;
+  tenant_id: string;
+  book_id: string;
+  user_id: string;
+  reservation_date: string;
+  expiry_date: string;
+  status: 'active' | 'fulfilled' | 'expired' | 'cancelled';
+  notified?: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
 
-  useEffect(() => {
-    loadLibraryData();
-  }, []);
+interface UseLibraryResult {
+  // Books
+  books: Book[];
+  booksLoading: boolean;
+  addBook: (book: Omit<Book, 'id' | 'tenant_id' | 'created_at' | 'updated_at'>) => Promise<Book>;
+  updateBook: (id: string, updates: Partial<Book>) => Promise<Book>;
+  deleteBook: (id: string) => Promise<void>;
+  
+  // Book Copies
+  bookCopies: BookCopy[];
+  copiesLoading: boolean;
+  addBookCopy: (copy: Omit<BookCopy, 'id' | 'created_at' | 'updated_at'>) => Promise<BookCopy>;
+  updateBookCopy: (id: string, updates: Partial<BookCopy>) => Promise<BookCopy>;
+  deleteBookCopy: (id: string) => Promise<void>;
+  
+  // Transactions
+  transactions: LibraryTransaction[];
+  transactionsLoading: boolean;
+  borrowBook: (copyId: string, userId: string, dueDate: string) => Promise<LibraryTransaction>;
+  returnBook: (transactionId: string, returnDate: string, fineAmount?: number) => Promise<LibraryTransaction>;
+  renewBook: (transactionId: string, newDueDate: string) => Promise<LibraryTransaction>;
+  
+  // Settings
+  settings: LibrarySettings | null;
+  settingsLoading: boolean;
+  updateSettings: (settings: Partial<LibrarySettings>) => Promise<LibrarySettings>;
+  
+  // Reservations
+  reservations: LibraryReservation[];
+  reservationsLoading: boolean;
+  createReservation: (bookId: string, userId: string) => Promise<LibraryReservation>;
+  cancelReservation: (id: string) => Promise<void>;
+  
+  // Utility functions
+  refetchBooks: () => void;
+  refetchCopies: () => void;
+  refetchTransactions: () => void;
+}
 
-  const loadLibraryData = async () => {
-    try {
-      setIsLoading(true);
-
-      // Load books
-      const { data: booksData, error: booksError } = await supabase
+export const useLibrary = (): UseLibraryResult => {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  
+  // Books Query
+  const { 
+    data: books = [], 
+    isLoading: booksLoading,
+    refetch: refetchBooks
+  } = useQuery({
+    queryKey: ['library-books'],
+    queryFn: async () => {
+      const { data, error } = await supabase
         .from('books')
         .select('*')
         .eq('is_active', true)
         .order('title');
+      
+      if (error) throw error;
+      return data as Book[];
+    },
+    enabled: !!user,
+  });
 
-      if (booksError) throw booksError;
-
-      // Load book copies
-      const { data: copiesData, error: copiesError } = await supabase
+  // Book Copies Query
+  const { 
+    data: bookCopies = [], 
+    isLoading: copiesLoading,
+    refetch: refetchCopies
+  } = useQuery({
+    queryKey: ['library-book-copies'],
+    queryFn: async () => {
+      const { data, error } = await supabase
         .from('book_copies')
         .select('*')
         .order('copy_number');
+      
+      if (error) throw error;
+      return data as BookCopy[];
+    },
+    enabled: !!user,
+  });
 
-      if (copiesError) throw copiesError;
-
-      // Load borrow transactions
-      const { data: transactionsData, error: transactionsError } = await supabase
-        .from('borrow_transactions')
+  // Transactions Query
+  const { 
+    data: transactions = [], 
+    isLoading: transactionsLoading,
+    refetch: refetchTransactions
+  } = useQuery({
+    queryKey: ['library-transactions'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('library_transactions')
         .select('*')
         .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      return data as LibraryTransaction[];
+    },
+    enabled: !!user,
+  });
 
-      if (transactionsError) throw transactionsError;
-
-      // Load library settings
-      const { data: settingsData, error: settingsError } = await supabase
+  // Settings Query
+  const { 
+    data: settings = null, 
+    isLoading: settingsLoading 
+  } = useQuery({
+    queryKey: ['library-settings'],
+    queryFn: async () => {
+      const { data, error } = await supabase
         .from('library_settings')
         .select('*')
-        .single();
+        .maybeSingle();
+      
+      if (error) throw error;
+      return data as LibrarySettings | null;
+    },
+    enabled: !!user,
+  });
 
-      if (settingsError && settingsError.code !== 'PGRST116') throw settingsError;
+  // Reservations Query
+  const { 
+    data: reservations = [], 
+    isLoading: reservationsLoading 
+  } = useQuery({
+    queryKey: ['library-reservations'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('library_reservations')
+        .select('*')
+        .eq('status', 'active')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      return data as LibraryReservation[];
+    },
+    enabled: !!user,
+  });
 
-      setBooks(booksData || []);
-      setBookCopies(copiesData || []);
-      setBorrowTransactions(transactionsData || []);
-      setLibrarySettings(settingsData || {} as LibrarySettings);
-    } catch (error) {
-      console.error('Error loading library data:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load library data. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const addBook = async (bookData: Omit<Book, 'id' | 'tenant_id' | 'created_at' | 'updated_at'>) => {
-    try {
+  // Add Book Mutation
+  const addBookMutation = useMutation({
+    mutationFn: async (bookData: Omit<Book, 'id' | 'tenant_id' | 'created_at' | 'updated_at'>) => {
       const { data, error } = await supabase
         .from('books')
         .insert([bookData])
         .select()
         .single();
-
+      
       if (error) throw error;
-
-      setBooks(prev => [...prev, data]);
-      toast({
-        title: "Success",
-        description: "Book added successfully.",
-      });
-      return data;
-    } catch (error) {
+      return data as Book;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['library-books'] });
+      toast.success('Book added successfully');
+    },
+    onError: (error) => {
       console.error('Error adding book:', error);
-      toast({
-        title: "Error",
-        description: "Failed to add book. Please try again.",
-        variant: "destructive",
-      });
-      throw error;
-    }
-  };
+      toast.error('Failed to add book');
+    },
+  });
 
-  const updateBook = async (id: string, updates: Partial<Book>) => {
-    try {
+  // Update Book Mutation
+  const updateBookMutation = useMutation({
+    mutationFn: async ({ id, updates }: { id: string; updates: Partial<Book> }) => {
       const { data, error } = await supabase
         .from('books')
         .update(updates)
         .eq('id', id)
         .select()
         .single();
-
+      
       if (error) throw error;
-
-      setBooks(prev => prev.map(book => book.id === id ? data : book));
-      toast({
-        title: "Success",
-        description: "Book updated successfully.",
-      });
-      return data;
-    } catch (error) {
+      return data as Book;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['library-books'] });
+      toast.success('Book updated successfully');
+    },
+    onError: (error) => {
       console.error('Error updating book:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update book. Please try again.",
-        variant: "destructive",
-      });
-      throw error;
-    }
-  };
+      toast.error('Failed to update book');
+    },
+  });
 
-  const deleteBook = async (id: string) => {
-    try {
+  // Delete Book Mutation
+  const deleteBookMutation = useMutation({
+    mutationFn: async (id: string) => {
       const { error } = await supabase
         .from('books')
         .update({ is_active: false })
         .eq('id', id);
-
+      
       if (error) throw error;
-
-      setBooks(prev => prev.filter(book => book.id !== id));
-      toast({
-        title: "Success",
-        description: "Book deleted successfully.",
-      });
-    } catch (error) {
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['library-books'] });
+      toast.success('Book deleted successfully');
+    },
+    onError: (error) => {
       console.error('Error deleting book:', error);
-      toast({
-        title: "Error",
-        description: "Failed to delete book. Please try again.",
-        variant: "destructive",
-      });
-      throw error;
-    }
-  };
+      toast.error('Failed to delete book');
+    },
+  });
 
-  const addBookCopy = async (copyData: Omit<BookCopy, 'id' | 'created_at' | 'updated_at'>) => {
-    try {
+  // Add Book Copy Mutation
+  const addBookCopyMutation = useMutation({
+    mutationFn: async (copyData: Omit<BookCopy, 'id' | 'created_at' | 'updated_at'>) => {
       const { data, error } = await supabase
         .from('book_copies')
         .insert([copyData])
         .select()
         .single();
-
+      
       if (error) throw error;
-
-      setBookCopies(prev => [...prev, data]);
-      toast({
-        title: "Success",
-        description: "Book copy added successfully.",
-      });
-      return data;
-    } catch (error) {
+      return data as BookCopy;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['library-book-copies'] });
+      toast.success('Book copy added successfully');
+    },
+    onError: (error) => {
       console.error('Error adding book copy:', error);
-      toast({
-        title: "Error",
-        description: "Failed to add book copy. Please try again.",
-        variant: "destructive",
-      });
-      throw error;
-    }
-  };
+      toast.error('Failed to add book copy');
+    },
+  });
 
-  const updateLibrarySettings = async (settings: Partial<LibrarySettings>) => {
-    try {
+  // Update Book Copy Mutation
+  const updateBookCopyMutation = useMutation({
+    mutationFn: async ({ id, updates }: { id: string; updates: Partial<BookCopy> }) => {
       const { data, error } = await supabase
-        .from('library_settings')
-        .upsert(settings)
+        .from('book_copies')
+        .update(updates)
+        .eq('id', id)
         .select()
         .single();
+      
+      if (error) throw error;
+      return data as BookCopy;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['library-book-copies'] });
+      toast.success('Book copy updated successfully');
+    },
+    onError: (error) => {
+      console.error('Error updating book copy:', error);
+      toast.error('Failed to update book copy');
+    },
+  });
 
+  // Delete Book Copy Mutation
+  const deleteBookCopyMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('book_copies')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['library-book-copies'] });
+      toast.success('Book copy deleted successfully');
+    },
+    onError: (error) => {
+      console.error('Error deleting book copy:', error);
+      toast.error('Failed to delete book copy');
+    },
+  });
+
+  // Update Settings Mutation
+  const updateSettingsMutation = useMutation({
+    mutationFn: async (settingsData: Partial<LibrarySettings>) => {
+      // Ensure tenant_id is provided
+      const dataWithTenantId = {
+        ...settingsData,
+        tenant_id: settingsData.tenant_id || user?.tenant_id || '',
+      };
+
+      const { data, error } = await supabase
+        .from('library_settings')
+        .upsert([dataWithTenantId])
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data as LibrarySettings;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['library-settings'] });
+      toast.success('Settings updated successfully');
+    },
+    onError: (error) => {
+      console.error('Error updating settings:', error);
+      toast.error('Failed to update settings');
+    },
+  });
+
+  // Borrow Book Mutation
+  const borrowBookMutation = useMutation({
+    mutationFn: async ({ copyId, userId, dueDate }: { copyId: string; userId: string; dueDate: string }) => {
+      // First, update the book copy status
+      await supabase
+        .from('book_copies')
+        .update({ status: 'borrowed' })
+        .eq('id', copyId);
+
+      // Then create the transaction
+      const { data, error } = await supabase
+        .from('library_transactions')
+        .insert([{
+          book_copy_id: copyId,
+          user_id: userId,
+          transaction_type: 'borrow',
+          borrow_date: new Date().toISOString(),
+          due_date: dueDate,
+          tenant_id: user?.tenant_id || '',
+        }])
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data as LibraryTransaction;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['library-transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['library-book-copies'] });
+      toast.success('Book borrowed successfully');
+    },
+    onError: (error) => {
+      console.error('Error borrowing book:', error);
+      toast.error('Failed to borrow book');
+    },
+  });
+
+  // Return Book Mutation
+  const returnBookMutation = useMutation({
+    mutationFn: async ({ transactionId, returnDate, fineAmount }: { transactionId: string; returnDate: string; fineAmount?: number }) => {
+      const { data, error } = await supabase
+        .from('library_transactions')
+        .update({
+          return_date: returnDate,
+          fine_amount: fineAmount || 0,
+          fine_paid: fineAmount ? false : true,
+        })
+        .eq('id', transactionId)
+        .select()
+        .single();
+      
       if (error) throw error;
 
-      setLibrarySettings(data);
-      toast({
-        title: "Success",
-        description: "Library settings updated successfully.",
-      });
-      return data;
-    } catch (error) {
-      console.error('Error updating library settings:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update library settings. Please try again.",
-        variant: "destructive",
-      });
-      throw error;
-    }
-  };
+      // Update book copy status back to available
+      const transaction = data as LibraryTransaction;
+      await supabase
+        .from('book_copies')
+        .update({ status: 'available' })
+        .eq('id', transaction.book_copy_id);
+
+      return transaction;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['library-transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['library-book-copies'] });
+      toast.success('Book returned successfully');
+    },
+    onError: (error) => {
+      console.error('Error returning book:', error);
+      toast.error('Failed to return book');
+    },
+  });
+
+  // Renew Book Mutation
+  const renewBookMutation = useMutation({
+    mutationFn: async ({ transactionId, newDueDate }: { transactionId: string; newDueDate: string }) => {
+      const { data, error } = await supabase
+        .from('library_transactions')
+        .update({ due_date: newDueDate })
+        .eq('id', transactionId)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data as LibraryTransaction;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['library-transactions'] });
+      toast.success('Book renewed successfully');
+    },
+    onError: (error) => {
+      console.error('Error renewing book:', error);
+      toast.error('Failed to renew book');
+    },
+  });
+
+  // Create Reservation Mutation
+  const createReservationMutation = useMutation({
+    mutationFn: async ({ bookId, userId }: { bookId: string; userId: string }) => {
+      const reservationDate = new Date();
+      const expiryDate = new Date();
+      expiryDate.setDate(expiryDate.getDate() + 7); // 7 days expiry
+
+      const { data, error } = await supabase
+        .from('library_reservations')
+        .insert([{
+          tenant_id: user?.tenant_id || '',
+          book_id: bookId,
+          user_id: userId,
+          reservation_date: reservationDate.toISOString(),
+          expiry_date: expiryDate.toISOString(),
+          status: 'active',
+        }])
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data as LibraryReservation;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['library-reservations'] });
+      toast.success('Book reserved successfully');
+    },
+    onError: (error) => {
+      console.error('Error creating reservation:', error);
+      toast.error('Failed to reserve book');
+    },
+  });
+
+  // Cancel Reservation Mutation
+  const cancelReservationMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('library_reservations')
+        .update({ status: 'cancelled' })
+        .eq('id', id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['library-reservations'] });
+      toast.success('Reservation cancelled successfully');
+    },
+    onError: (error) => {
+      console.error('Error cancelling reservation:', error);
+      toast.error('Failed to cancel reservation');
+    },
+  });
 
   return {
+    // Books
     books,
+    booksLoading,
+    addBook: addBookMutation.mutateAsync,
+    updateBook: (id: string, updates: Partial<Book>) => updateBookMutation.mutateAsync({ id, updates }),
+    deleteBook: deleteBookMutation.mutateAsync,
+    
+    // Book Copies
     bookCopies,
-    borrowTransactions,
-    librarySettings,
-    isLoading,
-    addBook,
-    updateBook,
-    deleteBook,
-    addBookCopy,
-    updateLibrarySettings,
-    refreshData: loadLibraryData,
+    copiesLoading,
+    addBookCopy: addBookCopyMutation.mutateAsync,
+    updateBookCopy: (id: string, updates: Partial<BookCopy>) => updateBookCopyMutation.mutateAsync({ id, updates }),
+    deleteBookCopy: deleteBookCopyMutation.mutateAsync,
+    
+    // Transactions
+    transactions,
+    transactionsLoading,
+    borrowBook: (copyId: string, userId: string, dueDate: string) => borrowBookMutation.mutateAsync({ copyId, userId, dueDate }),
+    returnBook: (transactionId: string, returnDate: string, fineAmount?: number) => returnBookMutation.mutateAsync({ transactionId, returnDate, fineAmount }),
+    renewBook: (transactionId: string, newDueDate: string) => renewBookMutation.mutateAsync({ transactionId, newDueDate }),
+    
+    // Settings
+    settings,
+    settingsLoading,
+    updateSettings: updateSettingsMutation.mutateAsync,
+    
+    // Reservations
+    reservations,
+    reservationsLoading,
+    createReservation: (bookId: string, userId: string) => createReservationMutation.mutateAsync({ bookId, userId }),
+    cancelReservation: cancelReservationMutation.mutateAsync,
+    
+    // Utility functions
+    refetchBooks,
+    refetchCopies,
+    refetchTransactions,
   };
 };
