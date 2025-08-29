@@ -1,99 +1,55 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import {
-  Form,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormControl,
-  FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Book } from '@/hooks/useLibrary';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { useToast } from '@/hooks/use-toast';
+import { useLibrary } from '@/hooks/useLibrary';
 
-const bookFormSchema = z.object({
+const bookSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   author: z.string().min(1, 'Author is required'),
-  isbn: z.string().optional(),
   genre: z.string().min(1, 'Genre is required'),
+  category: z.string().min(1, 'Category is required'),
+  isbn: z.string().optional(),
   publisher: z.string().optional(),
   edition: z.string().optional(),
   publication_year: z.number().optional(),
   language: z.string().default('English'),
   pages: z.number().optional(),
-  cover_image: z.string().url().optional().or(z.literal('')),
+  cover_image: z.string().optional(),
   description: z.string().optional(),
-  category: z.string().min(1, 'Category is required'),
   tags: z.string().optional(),
 });
 
-type BookFormData = z.infer<typeof bookFormSchema>;
+type BookFormData = z.infer<typeof bookSchema>;
 
 interface BookFormProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onSubmit: (data: Partial<Book>) => void;
-  book?: Book;
+  book?: any;
+  onSuccess?: () => void;
+  onCancel?: () => void;
 }
 
-const categories = [
-  'Academic',
-  'Fiction',
-  'Non-fiction',
-  'Reference',
-  'Biography',
-  'Science',
-  'History',
-  'Literature',
-  'Technology',
-  'Arts',
-  'Other'
-];
+export const BookForm: React.FC<BookFormProps> = ({ book, onSuccess, onCancel }) => {
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
+  const { addBook, updateBook } = useLibrary();
 
-const genres = [
-  'Textbook',
-  'Novel',
-  'Science Fiction',
-  'Fantasy',
-  'Mystery',
-  'Romance',
-  'Thriller',
-  'Biography',
-  'History',
-  'Science',
-  'Mathematics',
-  'Philosophy',
-  'Poetry',
-  'Drama',
-  'Other'
-];
-
-export const BookForm = ({ open, onOpenChange, onSubmit, book }: BookFormProps) => {
   const form = useForm<BookFormData>({
-    resolver: zodResolver(bookFormSchema),
+    resolver: zodResolver(bookSchema),
     defaultValues: {
       title: book?.title || '',
       author: book?.author || '',
-      isbn: book?.isbn || '',
       genre: book?.genre || '',
+      category: book?.category || '',
+      isbn: book?.isbn || '',
       publisher: book?.publisher || '',
       edition: book?.edition || '',
       publication_year: book?.publication_year || undefined,
@@ -101,34 +57,82 @@ export const BookForm = ({ open, onOpenChange, onSubmit, book }: BookFormProps) 
       pages: book?.pages || undefined,
       cover_image: book?.cover_image || '',
       description: book?.description || '',
-      category: book?.category || '',
       tags: book?.tags?.join(', ') || '',
     },
   });
 
-  const handleSubmit = (data: BookFormData) => {
-    const tagsArray = data.tags ? data.tags.split(',').map(tag => tag.trim()).filter(Boolean) : [];
-    
-    onSubmit({
-      ...data,
-      tags: tagsArray,
-      publication_year: data.publication_year || undefined,
-      pages: data.pages || undefined,
-    });
-    
-    form.reset();
-    onOpenChange(false);
+  const onSubmit = async (data: BookFormData) => {
+    setIsLoading(true);
+    try {
+      const bookData = {
+        ...data,
+        tags: data.tags ? data.tags.split(',').map(tag => tag.trim()).filter(Boolean) : [],
+      };
+
+      if (book) {
+        await updateBook(book.id, bookData);
+        toast({
+          title: "Success",
+          description: "Book updated successfully!",
+        });
+      } else {
+        await addBook(bookData);
+        toast({
+          title: "Success",
+          description: "Book added successfully!",
+        });
+      }
+
+      form.reset();
+      onSuccess?.();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to save book. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
+  const categories = [
+    'Academic',
+    'Fiction',
+    'Non-fiction',
+    'Reference',
+    'Science',
+    'Mathematics',
+    'History',
+    'Literature',
+    'Biography',
+    'Children',
+  ];
+
+  const genres = [
+    'Educational',
+    'Novel',
+    'Poetry',
+    'Drama',
+    'Science Fiction',
+    'Mystery',
+    'Romance',
+    'Horror',
+    'Self-Help',
+    'Technical',
+  ];
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{book ? 'Edit Book' : 'Add New Book'}</DialogTitle>
-        </DialogHeader>
-        
+    <Card className="w-full max-w-2xl mx-auto">
+      <CardHeader>
+        <CardTitle>{book ? 'Edit Book' : 'Add New Book'}</CardTitle>
+        <CardDescription>
+          {book ? 'Update book information' : 'Enter the details of the new book'}
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -152,20 +156,6 @@ export const BookForm = ({ open, onOpenChange, onSubmit, book }: BookFormProps) 
                     <FormLabel>Author *</FormLabel>
                     <FormControl>
                       <Input placeholder="Enter author name" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="isbn"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>ISBN</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter ISBN" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -224,6 +214,20 @@ export const BookForm = ({ open, onOpenChange, onSubmit, book }: BookFormProps) 
 
               <FormField
                 control={form.control}
+                name="isbn"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>ISBN</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter ISBN" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
                 name="publisher"
                 render={({ field }) => (
                   <FormItem>
@@ -261,7 +265,7 @@ export const BookForm = ({ open, onOpenChange, onSubmit, book }: BookFormProps) 
                         type="number" 
                         placeholder="Enter year" 
                         {...field}
-                        onChange={e => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
+                        onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
                       />
                     </FormControl>
                     <FormMessage />
@@ -288,13 +292,13 @@ export const BookForm = ({ open, onOpenChange, onSubmit, book }: BookFormProps) 
                 name="pages"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Number of Pages</FormLabel>
+                    <FormLabel>Pages</FormLabel>
                     <FormControl>
                       <Input 
                         type="number" 
                         placeholder="Enter page count" 
                         {...field}
-                        onChange={e => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
+                        onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
                       />
                     </FormControl>
                     <FormMessage />
@@ -340,7 +344,7 @@ export const BookForm = ({ open, onOpenChange, onSubmit, book }: BookFormProps) 
                   <FormControl>
                     <Textarea 
                       placeholder="Enter book description" 
-                      className="min-h-[100px]"
+                      rows={4}
                       {...field} 
                     />
                   </FormControl>
@@ -350,20 +354,18 @@ export const BookForm = ({ open, onOpenChange, onSubmit, book }: BookFormProps) 
             />
 
             <div className="flex justify-end space-x-2 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-              >
-                Cancel
-              </Button>
-              <Button type="submit">
-                {book ? 'Update Book' : 'Add Book'}
+              {onCancel && (
+                <Button type="button" variant="outline" onClick={onCancel}>
+                  Cancel
+                </Button>
+              )}
+              <Button type="submit" disabled={isLoading}>
+                {isLoading ? 'Saving...' : book ? 'Update Book' : 'Add Book'}
               </Button>
             </div>
           </form>
         </Form>
-      </DialogContent>
-    </Dialog>
+      </CardContent>
+    </Card>
   );
 };

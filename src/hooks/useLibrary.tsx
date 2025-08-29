@@ -1,11 +1,11 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
 export interface Book {
   id: string;
-  tenant_id: string;
   title: string;
   author: string;
   isbn?: string;
@@ -13,13 +13,14 @@ export interface Book {
   publisher?: string;
   edition?: string;
   publication_year?: number;
-  language: string;
+  language?: string;
   pages?: number;
   cover_image?: string;
   description?: string;
   category: string;
-  tags: string[];
+  tags?: string[];
   is_active: boolean;
+  tenant_id: string;
   created_at: string;
   updated_at: string;
 }
@@ -30,13 +31,14 @@ export interface BookCopy {
   copy_number: string;
   barcode?: string;
   rfid_tag?: string;
-  condition: 'new' | 'good' | 'damaged' | 'lost';
+  condition: string;
   shelf_location?: string;
-  status: 'available' | 'borrowed' | 'reserved' | 'maintenance';
-  acquisition_date: string;
+  status: string;
+  acquisition_date?: string;
   price?: number;
   notes?: string;
-  books: Book;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface BorrowTransaction {
@@ -49,16 +51,13 @@ export interface BorrowTransaction {
   due_date: string;
   return_date?: string;
   returned_by?: string;
-  status: 'borrowed' | 'returned' | 'overdue' | 'lost';
+  status: string;
   fine_amount: number;
   fine_paid: boolean;
   renewal_count: number;
   notes?: string;
-  book_copies: BookCopy;
-  borrower: {
-    full_name: string;
-    email: string;
-  };
+  created_at: string;
+  updated_at: string;
 }
 
 export interface LibrarySettings {
@@ -73,18 +72,23 @@ export interface LibrarySettings {
   damage_fine: number;
   loss_fine: number;
   overdue_reminder_days: number;
+  created_at: string;
+  updated_at: string;
 }
 
 export const useLibrary = () => {
   const [books, setBooks] = useState<Book[]>([]);
   const [bookCopies, setBookCopies] = useState<BookCopy[]>([]);
-  const [transactions, setTransactions] = useState<BorrowTransaction[]>([]);
-  const [settings, setSettings] = useState<LibrarySettings | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [borrowTransactions, setBorrowTransactions] = useState<BorrowTransaction[]>([]);
+  const [librarySettings, setLibrarySettings] = useState<LibrarySettings | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const { user } = useAuth();
   const { toast } = useToast();
 
+  // Fetch books
   const fetchBooks = async () => {
     try {
+      setIsLoading(true);
       const { data, error } = await supabase
         .from('books')
         .select('*')
@@ -93,65 +97,60 @@ export const useLibrary = () => {
 
       if (error) throw error;
       setBooks(data || []);
-    } catch (error) {
-      console.error('Error fetching books:', error);
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to fetch books. Please try again.",
+        description: "Failed to fetch books",
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const fetchBookCopies = async () => {
+  // Fetch book copies
+  const fetchBookCopies = async (bookId?: string) => {
     try {
-      const { data, error } = await supabase
-        .from('book_copies')
-        .select(`
-          *,
-          books(*)
-        `)
-        .order('copy_number');
+      let query = supabase.from('book_copies').select('*');
+      
+      if (bookId) {
+        query = query.eq('book_id', bookId);
+      }
+
+      const { data, error } = await query.order('copy_number');
 
       if (error) throw error;
       setBookCopies(data || []);
-    } catch (error) {
-      console.error('Error fetching book copies:', error);
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to fetch book copies. Please try again.",
+        description: "Failed to fetch book copies",
         variant: "destructive",
       });
     }
   };
 
-  const fetchTransactions = async () => {
+  // Fetch borrow transactions
+  const fetchBorrowTransactions = async () => {
     try {
       const { data, error } = await supabase
         .from('borrow_transactions')
-        .select(`
-          *,
-          book_copies(
-            *,
-            books(*)
-          ),
-          borrower:profiles!borrow_transactions_borrower_id_fkey(full_name, email)
-        `)
+        .select('*')
         .order('issue_date', { ascending: false });
 
       if (error) throw error;
-      setTransactions(data || []);
-    } catch (error) {
-      console.error('Error fetching transactions:', error);
+      setBorrowTransactions(data || []);
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to fetch transactions. Please try again.",
+        description: "Failed to fetch borrow transactions",
         variant: "destructive",
       });
     }
   };
 
-  const fetchSettings = async () => {
+  // Fetch library settings
+  const fetchLibrarySettings = async () => {
     try {
       const { data, error } = await supabase
         .from('library_settings')
@@ -159,223 +158,198 @@ export const useLibrary = () => {
         .single();
 
       if (error && error.code !== 'PGRST116') throw error;
-      setSettings(data);
-    } catch (error) {
-      console.error('Error fetching library settings:', error);
+      setLibrarySettings(data);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: "Failed to fetch library settings",
+        variant: "destructive",
+      });
     }
   };
 
-  const createBook = async (bookData: Partial<Book>) => {
+  // Add new book
+  const addBook = async (bookData: Omit<Book, 'id' | 'tenant_id' | 'created_at' | 'updated_at' | 'is_active'>) => {
     try {
       const { data, error } = await supabase
         .from('books')
-        .insert([bookData])
+        .insert([{ ...bookData, is_active: true }])
         .select()
         .single();
 
       if (error) throw error;
-
-      setBooks(prev => [data, ...prev]);
-      toast({
-        title: "Success",
-        description: "Book created successfully.",
-      });
-
+      
+      setBooks(prev => [...prev, data]);
       return data;
-    } catch (error) {
-      console.error('Error creating book:', error);
-      toast({
-        title: "Error",
-        description: "Failed to create book. Please try again.",
-        variant: "destructive",
-      });
-      return null;
+    } catch (error: any) {
+      throw new Error(error.message);
     }
   };
 
-  const createBookCopy = async (copyData: Partial<BookCopy>) => {
+  // Update book
+  const updateBook = async (bookId: string, bookData: Partial<Book>) => {
+    try {
+      const { data, error } = await supabase
+        .from('books')
+        .update(bookData)
+        .eq('id', bookId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      setBooks(prev => prev.map(book => book.id === bookId ? data : book));
+      return data;
+    } catch (error: any) {
+      throw new Error(error.message);
+    }
+  };
+
+  // Delete book
+  const deleteBook = async (bookId: string) => {
+    try {
+      const { error } = await supabase
+        .from('books')
+        .update({ is_active: false })
+        .eq('id', bookId);
+
+      if (error) throw error;
+      
+      setBooks(prev => prev.filter(book => book.id !== bookId));
+    } catch (error: any) {
+      throw new Error(error.message);
+    }
+  };
+
+  // Add book copy
+  const addBookCopy = async (copyData: Omit<BookCopy, 'id' | 'created_at' | 'updated_at'>) => {
     try {
       const { data, error } = await supabase
         .from('book_copies')
         .insert([copyData])
-        .select(`
-          *,
-          books(*)
-        `)
+        .select()
         .single();
 
       if (error) throw error;
-
-      setBookCopies(prev => [data, ...prev]);
-      toast({
-        title: "Success",
-        description: "Book copy added successfully.",
-      });
-
+      
+      setBookCopies(prev => [...prev, data]);
       return data;
-    } catch (error) {
-      console.error('Error creating book copy:', error);
-      toast({
-        title: "Error",
-        description: "Failed to add book copy. Please try again.",
-        variant: "destructive",
-      });
-      return null;
+    } catch (error: any) {
+      throw new Error(error.message);
     }
   };
 
-  const borrowBook = async (copyId: string, borrowerId: string) => {
+  // Update book copy
+  const updateBookCopy = async (copyId: string, copyData: Partial<BookCopy>) => {
     try {
-      const { data: userProfile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('user_id', borrowerId)
+      const { data, error } = await supabase
+        .from('book_copies')
+        .update(copyData)
+        .eq('id', copyId)
+        .select()
         .single();
 
-      if (!settings) {
-        throw new Error('Library settings not found');
-      }
-
-      const borrowDays = userProfile?.role === 'student' 
-        ? settings.student_borrow_days 
-        : settings.teacher_borrow_days;
-
-      const dueDate = new Date();
-      dueDate.setDate(dueDate.getDate() + borrowDays);
-
-      const { data: currentUser } = await supabase.auth.getUser();
+      if (error) throw error;
       
-      const transactionData = {
-        copy_id: copyId,
-        borrower_id: borrowerId,
-        issued_by: currentUser.user?.id,
-        due_date: dueDate.toISOString().split('T')[0],
-        status: 'borrowed' as const
-      };
+      setBookCopies(prev => prev.map(copy => copy.id === copyId ? data : copy));
+      return data;
+    } catch (error: any) {
+      throw new Error(error.message);
+    }
+  };
 
+  // Borrow book
+  const borrowBook = async (transactionData: Omit<BorrowTransaction, 'id' | 'created_at' | 'updated_at'>) => {
+    try {
       const { data, error } = await supabase
         .from('borrow_transactions')
         .insert([transactionData])
-        .select(`
-          *,
-          book_copies(
-            *,
-            books(*)
-          ),
-          borrower:profiles!borrow_transactions_borrower_id_fkey(full_name, email)
-        `)
+        .select()
         .single();
 
       if (error) throw error;
-
+      
       // Update book copy status
-      await supabase
-        .from('book_copies')
-        .update({ status: 'borrowed' })
-        .eq('id', copyId);
-
-      await fetchBookCopies();
-      setTransactions(prev => [data, ...prev]);
-
-      toast({
-        title: "Success",
-        description: "Book borrowed successfully.",
-      });
-
+      await updateBookCopy(transactionData.copy_id, { status: 'borrowed' });
+      
+      setBorrowTransactions(prev => [data, ...prev]);
       return data;
-    } catch (error) {
-      console.error('Error borrowing book:', error);
-      toast({
-        title: "Error",
-        description: "Failed to borrow book. Please try again.",
-        variant: "destructive",
-      });
-      return null;
+    } catch (error: any) {
+      throw new Error(error.message);
     }
   };
 
-  const returnBook = async (transactionId: string) => {
+  // Return book
+  const returnBook = async (transactionId: string, returnData: { return_date: string; returned_by: string; fine_amount?: number }) => {
     try {
-      const { data: currentUser } = await supabase.auth.getUser();
-      
       const { data, error } = await supabase
         .from('borrow_transactions')
-        .update({
-          return_date: new Date().toISOString().split('T')[0],
-          returned_by: currentUser.user?.id,
-          status: 'returned'
+        .update({ 
+          ...returnData, 
+          status: 'returned' 
         })
         .eq('id', transactionId)
-        .select(`
-          *,
-          book_copies(
-            *,
-            books(*)
-          ),
-          borrower:profiles!borrow_transactions_borrower_id_fkey(full_name, email)
-        `)
+        .select()
         .single();
 
       if (error) throw error;
-
+      
       // Update book copy status
-      await supabase
-        .from('book_copies')
-        .update({ status: 'available' })
-        .eq('id', data.copy_id);
-
-      await fetchBookCopies();
-      setTransactions(prev => prev.map(t => 
-        t.id === transactionId ? data : t
-      ));
-
-      toast({
-        title: "Success",
-        description: "Book returned successfully.",
-      });
-
+      const transaction = borrowTransactions.find(t => t.id === transactionId);
+      if (transaction) {
+        await updateBookCopy(transaction.copy_id, { status: 'available' });
+      }
+      
+      setBorrowTransactions(prev => 
+        prev.map(transaction => transaction.id === transactionId ? data : transaction)
+      );
       return data;
-    } catch (error) {
-      console.error('Error returning book:', error);
-      toast({
-        title: "Error",
-        description: "Failed to return book. Please try again.",
-        variant: "destructive",
-      });
-      return null;
+    } catch (error: any) {
+      throw new Error(error.message);
+    }
+  };
+
+  // Update library settings
+  const updateLibrarySettings = async (settings: Partial<LibrarySettings>) => {
+    try {
+      const { data, error } = await supabase
+        .from('library_settings')
+        .upsert(settings)
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      setLibrarySettings(data);
+      return data;
+    } catch (error: any) {
+      throw new Error(error.message);
     }
   };
 
   useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      await Promise.all([
-        fetchBooks(),
-        fetchBookCopies(),
-        fetchTransactions(),
-        fetchSettings()
-      ]);
-      setLoading(false);
-    };
-
-    loadData();
-  }, []);
+    if (user) {
+      fetchBooks();
+      fetchLibrarySettings();
+    }
+  }, [user]);
 
   return {
     books,
     bookCopies,
-    transactions,
-    settings,
-    loading,
-    createBook,
-    createBookCopy,
+    borrowTransactions,
+    librarySettings,
+    isLoading,
+    fetchBooks,
+    fetchBookCopies,
+    fetchBorrowTransactions,
+    addBook,
+    updateBook,
+    deleteBook,
+    addBookCopy,
+    updateBookCopy,
     borrowBook,
     returnBook,
-    refetch: {
-      books: fetchBooks,
-      copies: fetchBookCopies,
-      transactions: fetchTransactions,
-      settings: fetchSettings
-    }
+    updateLibrarySettings,
   };
 };
