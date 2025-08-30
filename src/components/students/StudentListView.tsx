@@ -1,96 +1,68 @@
-
-import React, { useState, useMemo } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import React, { useState } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Search, Users } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Search, Filter, Download, Eye, Edit, Trash2 } from 'lucide-react';
 import { useStudents } from '@/hooks/useStudents';
 
-interface StudentListViewProps {
-  onEditStudent?: (student: any) => void;
-  onViewStudent?: (student: any) => void;
-  onDeleteStudent?: (studentId: string) => void;
+interface Class {
+  id: string;
+  name: string;
+  code: string;
 }
 
-export const StudentListView: React.FC<StudentListViewProps> = ({
-  onEditStudent,
-  onViewStudent,
-  onDeleteStudent,
-}) => {
+interface Student {
+  id: string;
+  student_id: string;
+  roll_number?: string;
+  class_id?: string;
+  status: 'active' | 'inactive' | 'suspended' | 'graduated';
+  profiles?: {
+    full_name: string;
+    avatar_url?: string;
+  };
+}
+
+export const StudentListView = () => {
   const { students, loading } = useStudents();
+  const [selectedClass, setSelectedClass] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [classFilter, setClassFilter] = useState('all');
 
-  const filteredStudents = useMemo(() => {
-    return students.filter((student) => {
-      const matchesSearch = 
-        student.profiles?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        student.student_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        student.admission_number.toLowerCase().includes(searchTerm.toLowerCase());
+  // Mock classes data with proper structure
+  const classes: Class[] = [
+    { id: '1', name: 'Class 1', code: 'CLS-1' },
+    { id: '2', name: 'Class 2', code: 'CLS-2' },
+    { id: '3', name: 'Class 3', code: 'CLS-3' },
+  ];
 
-      const matchesStatus = statusFilter === 'all' || student.status === statusFilter;
-      
-      const matchesClass = classFilter === 'all' || student.classes?.id === classFilter;
-
-      return matchesSearch && matchesStatus && matchesClass;
-    });
-  }, [students, searchTerm, statusFilter, classFilter]);
+  const filteredStudents = students.filter((student) => {
+    const matchesSearch =
+      student.profiles?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      student.student_id.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesClass = selectedClass === '' || student.class_id === selectedClass;
+    return matchesSearch && matchesClass;
+  });
 
   if (loading) {
-    return (
-      <div className="space-y-4">
-        {[...Array(6)].map((_, i) => (
-          <Card key={i} className="animate-pulse">
-            <CardContent className="p-6">
-              <div className="flex items-center space-x-4">
-                <div className="w-12 h-12 bg-muted rounded-full"></div>
-                <div className="flex-1 space-y-2">
-                  <div className="h-4 bg-muted rounded w-1/4"></div>
-                  <div className="h-3 bg-muted rounded w-1/2"></div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    );
+    return <div className="p-6">Loading students...</div>;
   }
-
-  const uniqueClasses = Array.from(
-    new Set(students.map(s => s.classes?.id).filter(Boolean))
-  ).map(id => students.find(s => s.classes?.id === id)?.classes).filter(Boolean);
-
-  const getInitials = (name: string) => {
-    return name
-      ?.split(' ')
-      .map(word => word[0])
-      .join('')
-      .toUpperCase() || 'S';
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active':
-        return 'bg-green-100 text-green-800';
-      case 'inactive':
-        return 'bg-red-100 text-red-800';
-      case 'suspended':
-        return 'bg-yellow-100 text-yellow-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
 
   return (
     <div className="space-y-6">
-      {/* Search and Filters */}
-      <div className="flex flex-col sm:flex-row gap-4">
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-2xl font-bold">Student Directory</h2>
+          <p className="text-muted-foreground">View and manage all students</p>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="flex gap-4">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search students..."
             value={searchTerm}
@@ -98,124 +70,58 @@ export const StudentListView: React.FC<StudentListViewProps> = ({
             className="pl-10"
           />
         </div>
-        
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-full sm:w-48">
-            <SelectValue placeholder="Filter by status" />
+        <Select value={selectedClass} onValueChange={setSelectedClass}>
+          <SelectTrigger className="w-48">
+            <SelectValue placeholder="All Classes" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="inactive">Inactive</SelectItem>
-            <SelectItem value="suspended">Suspended</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Select value={classFilter} onValueChange={setClassFilter}>
-          <SelectTrigger className="w-full sm:w-48">
-            <SelectValue placeholder="Filter by class" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Classes</SelectItem>
-            {uniqueClasses.map((cls) => (
-              <SelectItem key={cls?.id} value={cls?.id || ''}>
-                {cls?.name || 'Unknown Class'}
+            <SelectItem value="">All Classes</SelectItem>
+            {classes.map((cls) => (
+              <SelectItem key={cls.id} value={cls.id}>
+                {cls.name} ({cls.code})
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
-
-        <Button variant="outline" size="sm">
-          <Download className="h-4 w-4 mr-2" />
-          Export
-        </Button>
       </div>
 
-      {/* Results Count */}
-      <div className="text-sm text-muted-foreground">
-        Showing {filteredStudents.length} of {students.length} students
-      </div>
-
-      {/* Student Cards */}
-      <div className="space-y-4">
+      {/* Students Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredStudents.map((student) => (
-          <Card key={student.id} className="hover:shadow-md transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <Avatar className="h-12 w-12">
-                    <AvatarImage src={student.profiles?.avatar_url || ''} />
-                    <AvatarFallback>
-                      {getInitials(student.profiles?.full_name || '')}
-                    </AvatarFallback>
-                  </Avatar>
-                  
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center space-x-3">
-                      <h3 className="text-lg font-semibold truncate">
-                        {student.profiles?.full_name || 'Unknown'}
-                      </h3>
-                      <Badge className={getStatusColor(student.status)}>
-                        {student.status}
-                      </Badge>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-2 text-sm text-muted-foreground">
-                      <div>
-                        <span className="font-medium">Student ID:</span> {student.student_id}
-                      </div>
-                      <div>
-                        <span className="font-medium">Roll No:</span> {student.roll_number || 'N/A'}
-                      </div>
-                      <div>
-                        <span className="font-medium">Class:</span> {student.classes?.name || 'Not Assigned'}
-                      </div>
-                      <div>
-                        <span className="font-medium">Admission:</span> {student.admission_number}
-                      </div>
-                    </div>
-
-                    {student.parent_name && (
-                      <div className="mt-2 text-sm text-muted-foreground">
-                        <span className="font-medium">Parent:</span> {student.parent_name}
-                        {student.parent_phone && (
-                          <span className="ml-4">
-                            <span className="font-medium">Phone:</span> {student.parent_phone}
-                          </span>
-                        )}
-                      </div>
-                    )}
-                  </div>
+          <Card key={student.id}>
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <Avatar>
+                  <AvatarImage src={student.profiles?.avatar_url} />
+                  <AvatarFallback>
+                    {student.profiles?.full_name?.charAt(0)}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1">
+                  <CardTitle className="text-lg">
+                    {student.profiles?.full_name}
+                  </CardTitle>
+                  <CardDescription>
+                    Student ID: {student.student_id}
+                  </CardDescription>
                 </div>
-
-                <div className="flex items-center space-x-2">
-                  {onViewStudent && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onViewStudent(student)}
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                  )}
-                  {onEditStudent && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onEditStudent(student)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                  )}
-                  {onDeleteStudent && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onDeleteStudent(student.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Class:</span>
+                  <span>{classes.find(c => c.id === selectedClass)?.name || 'Not Assigned'}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Roll Number:</span>
+                  <span>{student.roll_number}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Status:</span>
+                  <Badge variant={student.status === 'active' ? 'default' : 'secondary'}>
+                    {student.status}
+                  </Badge>
                 </div>
               </div>
             </CardContent>
@@ -223,16 +129,14 @@ export const StudentListView: React.FC<StudentListViewProps> = ({
         ))}
       </div>
 
-      {filteredStudents.length === 0 && (
-        <Card>
-          <CardContent className="p-12 text-center">
-            <div className="text-muted-foreground">
-              <Filter className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <h3 className="text-lg font-semibold mb-2">No students found</h3>
-              <p>Try adjusting your search criteria or filters.</p>
-            </div>
-          </CardContent>
-        </Card>
+      {students.length === 0 && (
+        <div className="text-center py-12">
+          <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+          <h3 className="text-lg font-medium mb-2">No students found</h3>
+          <p className="text-muted-foreground">
+            No students match your current search criteria
+          </p>
+        </div>
       )}
     </div>
   );

@@ -1204,6 +1204,347 @@ export type Database = {
           },
         ]
       }
+      inventory_alerts: {
+        Row: {
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          alert_message: string
+          alert_type: string
+          assignment_id: string | null
+          created_at: string | null
+          expires_at: string | null
+          id: string
+          is_acknowledged: boolean | null
+          item_id: string | null
+          priority: string | null
+          tenant_id: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          alert_message: string
+          alert_type: string
+          assignment_id?: string | null
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          is_acknowledged?: boolean | null
+          item_id?: string | null
+          priority?: string | null
+          tenant_id: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          alert_message?: string
+          alert_type?: string
+          assignment_id?: string | null
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          is_acknowledged?: boolean | null
+          item_id?: string | null
+          priority?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_alerts_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_alerts_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inventory_assignments: {
+        Row: {
+          actual_return_date: string | null
+          assigned_by: string
+          assigned_date: string
+          assigned_to_id: string | null
+          assigned_to_name: string | null
+          assigned_to_type: string
+          condition_at_issue:
+            | Database["public"]["Enums"]["asset_condition"]
+            | null
+          condition_at_return:
+            | Database["public"]["Enums"]["asset_condition"]
+            | null
+          created_at: string | null
+          expected_return_date: string | null
+          id: string
+          is_active: boolean | null
+          item_id: string | null
+          notes: string | null
+          returned_by: string | null
+          tenant_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          actual_return_date?: string | null
+          assigned_by: string
+          assigned_date?: string
+          assigned_to_id?: string | null
+          assigned_to_name?: string | null
+          assigned_to_type: string
+          condition_at_issue?:
+            | Database["public"]["Enums"]["asset_condition"]
+            | null
+          condition_at_return?:
+            | Database["public"]["Enums"]["asset_condition"]
+            | null
+          created_at?: string | null
+          expected_return_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          item_id?: string | null
+          notes?: string | null
+          returned_by?: string | null
+          tenant_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          actual_return_date?: string | null
+          assigned_by?: string
+          assigned_date?: string
+          assigned_to_id?: string | null
+          assigned_to_name?: string | null
+          assigned_to_type?: string
+          condition_at_issue?:
+            | Database["public"]["Enums"]["asset_condition"]
+            | null
+          condition_at_return?:
+            | Database["public"]["Enums"]["asset_condition"]
+            | null
+          created_at?: string | null
+          expected_return_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          item_id?: string | null
+          notes?: string | null
+          returned_by?: string | null
+          tenant_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_assignments_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inventory_categories: {
+        Row: {
+          category_type: Database["public"]["Enums"]["asset_category"]
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          tenant_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          category_type: Database["public"]["Enums"]["asset_category"]
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          tenant_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          category_type?: Database["public"]["Enums"]["asset_category"]
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          tenant_id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      inventory_items: {
+        Row: {
+          asset_id: string
+          brand_model: string | null
+          category_id: string | null
+          condition: Database["public"]["Enums"]["asset_condition"] | null
+          created_at: string | null
+          description: string | null
+          documents: Json | null
+          id: string
+          image_url: string | null
+          is_active: boolean | null
+          item_type: Database["public"]["Enums"]["item_type"]
+          location_assigned: string | null
+          minimum_stock_level: number | null
+          name: string
+          purchase_cost: number | null
+          purchase_date: string | null
+          quantity_in_stock: number | null
+          serial_number: string | null
+          tenant_id: string
+          updated_at: string | null
+          vendor: string | null
+          warranty_expiry: string | null
+        }
+        Insert: {
+          asset_id: string
+          brand_model?: string | null
+          category_id?: string | null
+          condition?: Database["public"]["Enums"]["asset_condition"] | null
+          created_at?: string | null
+          description?: string | null
+          documents?: Json | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          item_type?: Database["public"]["Enums"]["item_type"]
+          location_assigned?: string | null
+          minimum_stock_level?: number | null
+          name: string
+          purchase_cost?: number | null
+          purchase_date?: string | null
+          quantity_in_stock?: number | null
+          serial_number?: string | null
+          tenant_id: string
+          updated_at?: string | null
+          vendor?: string | null
+          warranty_expiry?: string | null
+        }
+        Update: {
+          asset_id?: string
+          brand_model?: string | null
+          category_id?: string | null
+          condition?: Database["public"]["Enums"]["asset_condition"] | null
+          created_at?: string | null
+          description?: string | null
+          documents?: Json | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          item_type?: Database["public"]["Enums"]["item_type"]
+          location_assigned?: string | null
+          minimum_stock_level?: number | null
+          name?: string
+          purchase_cost?: number | null
+          purchase_date?: string | null
+          quantity_in_stock?: number | null
+          serial_number?: string | null
+          tenant_id?: string
+          updated_at?: string | null
+          vendor?: string | null
+          warranty_expiry?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_items_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inventory_transactions: {
+        Row: {
+          assignment_id: string | null
+          condition_after: Database["public"]["Enums"]["asset_condition"] | null
+          condition_before:
+            | Database["public"]["Enums"]["asset_condition"]
+            | null
+          cost: number | null
+          created_at: string | null
+          from_location: string | null
+          from_user_id: string | null
+          id: string
+          item_id: string | null
+          notes: string | null
+          processed_by: string
+          quantity: number | null
+          tenant_id: string
+          to_location: string | null
+          to_user_id: string | null
+          transaction_date: string | null
+          transaction_type: Database["public"]["Enums"]["transaction_type"]
+        }
+        Insert: {
+          assignment_id?: string | null
+          condition_after?:
+            | Database["public"]["Enums"]["asset_condition"]
+            | null
+          condition_before?:
+            | Database["public"]["Enums"]["asset_condition"]
+            | null
+          cost?: number | null
+          created_at?: string | null
+          from_location?: string | null
+          from_user_id?: string | null
+          id?: string
+          item_id?: string | null
+          notes?: string | null
+          processed_by: string
+          quantity?: number | null
+          tenant_id: string
+          to_location?: string | null
+          to_user_id?: string | null
+          transaction_date?: string | null
+          transaction_type: Database["public"]["Enums"]["transaction_type"]
+        }
+        Update: {
+          assignment_id?: string | null
+          condition_after?:
+            | Database["public"]["Enums"]["asset_condition"]
+            | null
+          condition_before?:
+            | Database["public"]["Enums"]["asset_condition"]
+            | null
+          cost?: number | null
+          created_at?: string | null
+          from_location?: string | null
+          from_user_id?: string | null
+          id?: string
+          item_id?: string | null
+          notes?: string | null
+          processed_by?: string
+          quantity?: number | null
+          tenant_id?: string
+          to_location?: string | null
+          to_user_id?: string | null
+          transaction_date?: string | null
+          transaction_type?: Database["public"]["Enums"]["transaction_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_transactions_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_transactions_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leave_applications: {
         Row: {
           applicant_id: string
@@ -1361,6 +1702,68 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      maintenance_schedules: {
+        Row: {
+          completed_by: string | null
+          completed_date: string | null
+          cost: number | null
+          created_at: string | null
+          created_by: string
+          id: string
+          item_id: string | null
+          maintenance_type: string
+          next_service_date: string | null
+          notes: string | null
+          scheduled_date: string
+          service_provider: string | null
+          status: string | null
+          tenant_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          completed_by?: string | null
+          completed_date?: string | null
+          cost?: number | null
+          created_at?: string | null
+          created_by: string
+          id?: string
+          item_id?: string | null
+          maintenance_type: string
+          next_service_date?: string | null
+          notes?: string | null
+          scheduled_date: string
+          service_provider?: string | null
+          status?: string | null
+          tenant_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          completed_by?: string | null
+          completed_date?: string | null
+          cost?: number | null
+          created_at?: string | null
+          created_by?: string
+          id?: string
+          item_id?: string | null
+          maintenance_type?: string
+          next_service_date?: string | null
+          notes?: string | null
+          scheduled_date?: string
+          service_provider?: string | null
+          status?: string | null
+          tenant_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maintenance_schedules_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_items"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       marks: {
         Row: {
@@ -2225,6 +2628,10 @@ export type Database = {
         }
         Returns: number
       }
+      check_overdue_returns: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       get_current_tenant_id: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -2260,7 +2667,28 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      asset_category:
+        | "uniforms"
+        | "lab_equipment"
+        | "electronics"
+        | "furniture"
+        | "stationery"
+        | "sports_gear"
+        | "miscellaneous"
+      asset_condition:
+        | "new"
+        | "good"
+        | "fair"
+        | "damaged"
+        | "under_repair"
+        | "disposed"
+      item_type: "consumable" | "non_consumable"
+      transaction_type:
+        | "issue"
+        | "return"
+        | "transfer"
+        | "maintenance"
+        | "disposal"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2387,6 +2815,32 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      asset_category: [
+        "uniforms",
+        "lab_equipment",
+        "electronics",
+        "furniture",
+        "stationery",
+        "sports_gear",
+        "miscellaneous",
+      ],
+      asset_condition: [
+        "new",
+        "good",
+        "fair",
+        "damaged",
+        "under_repair",
+        "disposed",
+      ],
+      item_type: ["consumable", "non_consumable"],
+      transaction_type: [
+        "issue",
+        "return",
+        "transfer",
+        "maintenance",
+        "disposal",
+      ],
+    },
   },
 } as const

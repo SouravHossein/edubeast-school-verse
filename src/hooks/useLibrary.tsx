@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -169,7 +168,7 @@ export const useLibrary = (): UseLibraryResult => {
     enabled: !!user,
   });
 
-  // Transactions Query
+  // Transactions Query - Fixed table name
   const { 
     data: transactions = [], 
     isLoading: transactionsLoading,
@@ -178,7 +177,7 @@ export const useLibrary = (): UseLibraryResult => {
     queryKey: ['library-transactions'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('library_transactions')
+        .from('borrow_transactions')
         .select('*')
         .order('created_at', { ascending: false });
       
@@ -225,12 +224,12 @@ export const useLibrary = (): UseLibraryResult => {
     enabled: !!user,
   });
 
-  // Add Book Mutation
+  // Add Book Mutation - Fixed bulk insert
   const addBookMutation = useMutation({
     mutationFn: async (bookData: Omit<Book, 'id' | 'tenant_id' | 'created_at' | 'updated_at'>) => {
       const { data, error } = await supabase
         .from('books')
-        .insert([bookData])
+        .insert([{ ...bookData, tenant_id: user?.tenant_id || '' }])
         .select()
         .single();
       
@@ -244,6 +243,32 @@ export const useLibrary = (): UseLibraryResult => {
     onError: (error) => {
       console.error('Error adding book:', error);
       toast.error('Failed to add book');
+    },
+  });
+
+  // Bulk Add Books Mutation - Fixed implementation
+  const bulkAddBooksMutation = useMutation({
+    mutationFn: async (booksData: Omit<Book, 'id' | 'tenant_id' | 'created_at' | 'updated_at'>[]) => {
+      const booksWithTenant = booksData.map(book => ({
+        ...book,
+        tenant_id: user?.tenant_id || '',
+      }));
+
+      const { data, error } = await supabase
+        .from('books')
+        .insert(booksWithTenant)
+        .select();
+      
+      if (error) throw error;
+      return data as Book[];
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['library-books'] });
+      toast.success(`${data.length} books added successfully`);
+    },
+    onError: (error) => {
+      console.error('Error adding books:', error);
+      toast.error('Failed to add books');
     },
   });
 
@@ -537,6 +562,7 @@ export const useLibrary = (): UseLibraryResult => {
     books,
     booksLoading,
     addBook: addBookMutation.mutateAsync,
+    bulkAddBooks: bulkAddBooksMutation.mutateAsync,
     updateBook: (id: string, updates: Partial<Book>) => updateBookMutation.mutateAsync({ id, updates }),
     deleteBook: deleteBookMutation.mutateAsync,
     

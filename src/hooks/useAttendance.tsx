@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -90,7 +89,15 @@ export const useAttendance = () => {
         throw error;
       }
       
-      return data as AttendanceRecord[];
+      return data.map(record => ({
+        ...record,
+        students: {
+          ...record.students,
+          profiles: Array.isArray(record.students.profiles) 
+            ? record.students.profiles[0] 
+            : record.students.profiles
+        }
+      })) as AttendanceRecord[];
     },
   });
 
@@ -122,7 +129,15 @@ export const useAttendance = () => {
         .single();
       
       if (error) throw error;
-      return data as AttendanceRecord;
+      return {
+        ...data,
+        students: {
+          ...data.students,
+          profiles: Array.isArray(data.students.profiles) 
+            ? data.students.profiles[0] 
+            : data.students.profiles
+        }
+      } as AttendanceRecord;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['attendance'] });
@@ -172,7 +187,15 @@ export const useAttendance = () => {
         `);
       
       if (error) throw error;
-      return data as AttendanceRecord[];
+      return data.map(record => ({
+        ...record,
+        students: {
+          ...record.students,
+          profiles: Array.isArray(record.students.profiles) 
+            ? record.students.profiles[0] 
+            : record.students.profiles
+        }
+      })) as AttendanceRecord[];
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['attendance'] });
@@ -210,7 +233,15 @@ export const useAttendance = () => {
         .single();
       
       if (error) throw error;
-      return data as AttendanceRecord;
+      return {
+        ...data,
+        students: {
+          ...data.students,
+          profiles: Array.isArray(data.students.profiles) 
+            ? data.students.profiles[0] 
+            : data.students.profiles
+        }
+      } as AttendanceRecord;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['attendance'] });
@@ -279,7 +310,15 @@ export const useAttendance = () => {
       throw error;
     }
     
-    return data as AttendanceRecord[];
+    return data.map(record => ({
+      ...record,
+      students: {
+        ...record.students,
+        profiles: Array.isArray(record.students.profiles) 
+          ? record.students.profiles[0] 
+          : record.students.profiles
+      }
+    })) as AttendanceRecord[];
   };
 
   return {
