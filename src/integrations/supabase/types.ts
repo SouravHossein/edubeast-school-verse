@@ -1144,6 +1144,45 @@ export type Database = {
           },
         ]
       }
+      file_uploads: {
+        Row: {
+          alt_text: string | null
+          created_at: string | null
+          file_name: string
+          file_size: number | null
+          file_type: string
+          file_url: string
+          id: string
+          mime_type: string | null
+          tenant_id: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          alt_text?: string | null
+          created_at?: string | null
+          file_name: string
+          file_size?: number | null
+          file_type: string
+          file_url: string
+          id?: string
+          mime_type?: string | null
+          tenant_id: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          alt_text?: string | null
+          created_at?: string | null
+          file_name?: string
+          file_size?: number | null
+          file_type?: string
+          file_url?: string
+          id?: string
+          mime_type?: string | null
+          tenant_id?: string
+          uploaded_by?: string | null
+        }
+        Relationships: []
+      }
       gallery_items: {
         Row: {
           category: string
@@ -1889,6 +1928,120 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      page_customizations: {
+        Row: {
+          created_at: string | null
+          customization_data: Json
+          id: string
+          is_published: boolean | null
+          layout_data: Json | null
+          page_slug: string
+          published_at: string | null
+          seo_settings: Json | null
+          tenant_id: string
+          theme_settings: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          customization_data?: Json
+          id?: string
+          is_published?: boolean | null
+          layout_data?: Json | null
+          page_slug: string
+          published_at?: string | null
+          seo_settings?: Json | null
+          tenant_id: string
+          theme_settings?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          customization_data?: Json
+          id?: string
+          is_published?: boolean | null
+          layout_data?: Json | null
+          page_slug?: string
+          published_at?: string | null
+          seo_settings?: Json | null
+          tenant_id?: string
+          theme_settings?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      page_sections: {
+        Row: {
+          allowed_props: Json | null
+          component_path: string | null
+          created_at: string | null
+          default_props: Json | null
+          id: string
+          is_system_section: boolean | null
+          section_name: string
+          section_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          allowed_props?: Json | null
+          component_path?: string | null
+          created_at?: string | null
+          default_props?: Json | null
+          id?: string
+          is_system_section?: boolean | null
+          section_name: string
+          section_type: string
+          updated_at?: string | null
+        }
+        Update: {
+          allowed_props?: Json | null
+          component_path?: string | null
+          created_at?: string | null
+          default_props?: Json | null
+          id?: string
+          is_system_section?: boolean | null
+          section_name?: string
+          section_type?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      page_templates: {
+        Row: {
+          allowed_customizations: Json | null
+          created_at: string | null
+          default_sections: Json | null
+          id: string
+          is_system_page: boolean | null
+          page_slug: string
+          page_title: string
+          page_type: Database["public"]["Enums"]["page_type"]
+          updated_at: string | null
+        }
+        Insert: {
+          allowed_customizations?: Json | null
+          created_at?: string | null
+          default_sections?: Json | null
+          id?: string
+          is_system_page?: boolean | null
+          page_slug: string
+          page_title: string
+          page_type: Database["public"]["Enums"]["page_type"]
+          updated_at?: string | null
+        }
+        Update: {
+          allowed_customizations?: Json | null
+          created_at?: string | null
+          default_sections?: Json | null
+          id?: string
+          is_system_page?: boolean | null
+          page_slug?: string
+          page_title?: string
+          page_type?: Database["public"]["Enums"]["page_type"]
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -2640,6 +2793,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_page_customization: {
+        Args: { p_page_slug: string; p_tenant_id: string }
+        Returns: Json
+      }
       is_admin: {
         Args: Record<PropertyKey, never>
         Returns: boolean
@@ -2683,6 +2840,11 @@ export type Database = {
         | "under_repair"
         | "disposed"
       item_type: "consumable" | "non_consumable"
+      page_type:
+        | "fully_customizable"
+        | "semi_customizable"
+        | "lightly_customizable"
+        | "not_customizable"
       transaction_type:
         | "issue"
         | "return"
@@ -2834,6 +2996,12 @@ export const Constants = {
         "disposed",
       ],
       item_type: ["consumable", "non_consumable"],
+      page_type: [
+        "fully_customizable",
+        "semi_customizable",
+        "lightly_customizable",
+        "not_customizable",
+      ],
       transaction_type: [
         "issue",
         "return",

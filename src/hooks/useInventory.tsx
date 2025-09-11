@@ -239,7 +239,7 @@ export const useInventory = () => {
     mutationFn: async (categoryData: Omit<InventoryCategory, 'id' | 'tenant_id' | 'created_at' | 'updated_at'>) => {
       const { data, error } = await supabase
         .from('inventory_categories')
-        .insert([categoryData])
+        .insert([{ ...categoryData, tenant_id: (user as any)?.tenant_id || '' }])
         .select()
         .single();
       
@@ -261,7 +261,7 @@ export const useInventory = () => {
     mutationFn: async (itemData: Omit<InventoryItem, 'id' | 'tenant_id' | 'created_at' | 'updated_at'>) => {
       const { data, error } = await supabase
         .from('inventory_items')
-        .insert([itemData])
+        .insert([{ ...itemData, tenant_id: (user as any)?.tenant_id || '' }])
         .select()
         .single();
       
@@ -285,7 +285,9 @@ export const useInventory = () => {
         .from('inventory_assignments')
         .insert([{
           ...assignmentData,
+          tenant_id: (user as any)?.tenant_id || '',
           assigned_by: user?.id || '',
+          assigned_to_type: assignmentData.assigned_to_type || 'student'
         }])
         .select()
         .single();

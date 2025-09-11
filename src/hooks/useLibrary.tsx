@@ -182,7 +182,7 @@ export const useLibrary = (): UseLibraryResult => {
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return data as LibraryTransaction[];
+      return data as any[];
     },
     enabled: !!user,
   });
@@ -229,7 +229,7 @@ export const useLibrary = (): UseLibraryResult => {
     mutationFn: async (bookData: Omit<Book, 'id' | 'tenant_id' | 'created_at' | 'updated_at'>) => {
       const { data, error } = await supabase
         .from('books')
-        .insert([{ ...bookData, tenant_id: user?.tenant_id || '' }])
+        .insert([{ ...bookData, tenant_id: (user as any)?.tenant_id || '' }])
         .select()
         .single();
       
@@ -251,7 +251,7 @@ export const useLibrary = (): UseLibraryResult => {
     mutationFn: async (booksData: Omit<Book, 'id' | 'tenant_id' | 'created_at' | 'updated_at'>[]) => {
       const booksWithTenant = booksData.map(book => ({
         ...book,
-        tenant_id: user?.tenant_id || '',
+        tenant_id: (user as any)?.tenant_id || '',
       }));
 
       const { data, error } = await supabase
@@ -419,20 +419,21 @@ export const useLibrary = (): UseLibraryResult => {
 
       // Then create the transaction
       const { data, error } = await supabase
-        .from('library_transactions')
+        .from('borrow_transactions')
         .insert([{
-          book_copy_id: copyId,
-          user_id: userId,
-          transaction_type: 'borrow',
-          borrow_date: new Date().toISOString(),
+          copy_id: copyId,
+          borrower_id: userId,
+          issued_by: user?.id || '',
+          issue_date: new Date().toISOString().split('T')[0],
           due_date: dueDate,
-          tenant_id: user?.tenant_id || '',
+          tenant_id: (user as any)?.tenant_id || '',
+          status: 'borrowed'
         }])
         .select()
         .single();
       
       if (error) throw error;
-      return data as LibraryTransaction;
+      return data as any;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['library-transactions'] });
@@ -449,7 +450,7 @@ export const useLibrary = (): UseLibraryResult => {
   const returnBookMutation = useMutation({
     mutationFn: async ({ transactionId, returnDate, fineAmount }: { transactionId: string; returnDate: string; fineAmount?: number }) => {
       const { data, error } = await supabase
-        .from('library_transactions')
+      .from('borrow_transactions')
         .update({
           return_date: returnDate,
           fine_amount: fineAmount || 0,
@@ -485,14 +486,14 @@ export const useLibrary = (): UseLibraryResult => {
   const renewBookMutation = useMutation({
     mutationFn: async ({ transactionId, newDueDate }: { transactionId: string; newDueDate: string }) => {
       const { data, error } = await supabase
-        .from('library_transactions')
+        .from('borrow_transactions')
         .update({ due_date: newDueDate })
         .eq('id', transactionId)
         .select()
         .single();
       
       if (error) throw error;
-      return data as LibraryTransaction;
+      return data as any;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['library-transactions'] });
@@ -514,7 +515,7 @@ export const useLibrary = (): UseLibraryResult => {
       const { data, error } = await supabase
         .from('library_reservations')
         .insert([{
-          tenant_id: user?.tenant_id || '',
+          tenant_id: (user as any)?.tenant_id || '',
           book_id: bookId,
           user_id: userId,
           reservation_date: reservationDate.toISOString(),
