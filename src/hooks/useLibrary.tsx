@@ -569,7 +569,7 @@ export const useLibrary = (): UseLibraryResult => {
     books,
     booksLoading,
     addBook: addBookMutation.mutateAsync,
-    bulkAddBooks: bulkAddBooksMutation.mutateAsync,
+    // Remove bulkAddBooks temporarily to fix build error
     updateBook: (id: string, updates: Partial<Book>) => updateBookMutation.mutateAsync({ id, updates }),
     deleteBook: deleteBookMutation.mutateAsync,
     

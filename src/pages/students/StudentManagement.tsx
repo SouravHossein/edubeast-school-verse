@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { useStudents } from '@/hooks/useStudents';
+import { useStudents, Student } from '@/hooks/useStudents';
 import { StudentListView } from '@/components/students/StudentListView';
 import { StudentForm } from '@/components/students/StudentForm';
 import { useToast } from '@/hooks/use-toast';
@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 interface Class {
   id: string;
   name: string;
+  code: string;
   section?: string;
   grade_level: number;
 }
@@ -30,7 +31,7 @@ const StudentManagement = () => {
     try {
       const { data, error } = await supabase
         .from('classes')
-        .select('id, name, section, grade_level')
+        .select('id, name, code, section, grade_level')
         .eq('is_active', true)
         .order('grade_level', { ascending: true });
 

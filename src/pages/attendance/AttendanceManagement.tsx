@@ -49,16 +49,18 @@ const AttendanceManagement = () => {
   const handleSaveAttendance = async (date: string, classId: string, attendanceData: any[]) => {
     setLoading(true);
     try {
-      const records = attendanceData.map(record => ({
-        student_id: record.student_id,
+      const bulkData = {
         class_id: classId,
         date,
-        status: record.status,
-        check_in_time: record.check_in_time,
-        remarks: record.remarks
-      }));
+        records: attendanceData.map(record => ({
+          student_id: record.student_id,
+          status: record.status,
+          check_in_time: record.check_in_time,
+          remarks: record.remarks
+        }))
+      };
 
-      await bulkMarkAttendance(records);
+      await bulkMarkAttendance(bulkData);
     } catch (error) {
       console.error('Error saving attendance:', error);
     } finally {

@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ParentPortal } from '@/components/communications/ParentPortal';
 import { TeacherMessaging } from '@/components/communications/TeacherMessaging';
 import { AnnouncementSystem } from '@/components/communications/AnnouncementSystem';
-import { ExternalIntegrations } from '@/components/communications/ExternalIntegrations';
+import { IntegrationsHub } from '@/components/communications/IntegrationsHub';
 import { MessageSquare, Users, Megaphone, Settings, Mail, Phone } from 'lucide-react';
 
 export default function CommunicationHub() {
@@ -64,7 +64,7 @@ export default function CommunicationHub() {
         </TabsContent>
 
         <TabsContent value="integrations">
-          <ExternalIntegrations />
+          <IntegrationsHub />
         </TabsContent>
       </Tabs>
     </div>
