@@ -384,9 +384,15 @@ export const useLibrary = (): UseLibraryResult => {
   const updateSettingsMutation = useMutation({
     mutationFn: async (settingsData: Partial<LibrarySettings>) => {
       // Ensure tenant_id is provided
+      const userProfile = await supabase
+        .from('profiles')
+        .select('tenant_id')
+        .eq('user_id', user?.id)
+        .single();
+
       const dataWithTenantId = {
         ...settingsData,
-        tenant_id: settingsData.tenant_id || user?.tenant_id || '',
+        tenant_id: settingsData.tenant_id || userProfile.data?.tenant_id || '',
       };
 
       const { data, error } = await supabase
@@ -463,11 +469,11 @@ export const useLibrary = (): UseLibraryResult => {
       if (error) throw error;
 
       // Update book copy status back to available
-      const transaction = data as LibraryTransaction;
+      const transaction = data as any;
       await supabase
         .from('book_copies')
         .update({ status: 'available' })
-        .eq('id', transaction.book_copy_id);
+        .eq('id', transaction.copy_id);
 
       return transaction;
     },

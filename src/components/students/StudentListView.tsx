@@ -18,24 +18,33 @@ interface Student {
   student_id: string;
   roll_number?: string;
   class_id?: string;
-  status: 'active' | 'inactive' | 'suspended' | 'graduated';
+  status: 'active' | 'inactive' | 'transferred';
   profiles?: {
     full_name: string;
     avatar_url?: string;
   };
 }
 
-export const StudentListView = () => {
-  const { students, loading } = useStudents();
+interface StudentListViewProps {
+  students: Student[];
+  loading: boolean;
+  onAddStudent: () => void;
+  onEditStudent: (student: any) => void;
+  onDeleteStudent: (id: string) => Promise<void>;
+  classes: Class[];
+}
+
+export const StudentListView: React.FC<StudentListViewProps> = ({ 
+  students, 
+  loading,
+  onAddStudent,
+  onEditStudent,
+  onDeleteStudent,
+  classes
+}) => {
   const [selectedClass, setSelectedClass] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Mock classes data with proper structure
-  const classes: Class[] = [
-    { id: '1', name: 'Class 1', code: 'CLS-1' },
-    { id: '2', name: 'Class 2', code: 'CLS-2' },
-    { id: '3', name: 'Class 3', code: 'CLS-3' },
-  ];
 
   const filteredStudents = students.filter((student) => {
     const matchesSearch =
