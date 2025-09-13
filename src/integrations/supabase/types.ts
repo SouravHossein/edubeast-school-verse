@@ -1243,6 +1243,205 @@ export type Database = {
           },
         ]
       }
+      integration_logs: {
+        Row: {
+          action: string
+          actor_user_id: string | null
+          created_at: string
+          error_message: string | null
+          execution_time_ms: number | null
+          id: string
+          integration_id: string | null
+          payload: Json | null
+          status: string
+          tenant_id: string | null
+        }
+        Insert: {
+          action: string
+          actor_user_id?: string | null
+          created_at?: string
+          error_message?: string | null
+          execution_time_ms?: number | null
+          id?: string
+          integration_id?: string | null
+          payload?: Json | null
+          status: string
+          tenant_id?: string | null
+        }
+        Update: {
+          action?: string
+          actor_user_id?: string | null
+          created_at?: string
+          error_message?: string | null
+          execution_time_ms?: number | null
+          id?: string
+          integration_id?: string | null
+          payload?: Json | null
+          status?: string
+          tenant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integration_logs_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "integrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      integration_quotas: {
+        Row: {
+          created_at: string
+          current_usage: number | null
+          id: string
+          max_limit: number
+          quota_type: string
+          reset_at: string
+          service_name: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          current_usage?: number | null
+          id?: string
+          max_limit: number
+          quota_type: string
+          reset_at: string
+          service_name: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          current_usage?: number | null
+          id?: string
+          max_limit?: number
+          quota_type?: string
+          reset_at?: string
+          service_name?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      integration_tokens: {
+        Row: {
+          created_at: string
+          encrypted_token: string
+          expires_at: string | null
+          id: string
+          integration_id: string
+          scopes: string[] | null
+          token_type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          encrypted_token: string
+          expires_at?: string | null
+          id?: string
+          integration_id: string
+          scopes?: string[] | null
+          token_type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          encrypted_token?: string
+          expires_at?: string | null
+          id?: string
+          integration_id?: string
+          scopes?: string[] | null
+          token_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integration_tokens_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "integrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      integration_webhooks: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          payload: Json
+          processed: boolean | null
+          processed_at: string | null
+          service_name: string
+          signature: string | null
+          tenant_id: string
+          webhook_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          payload?: Json
+          processed?: boolean | null
+          processed_at?: string | null
+          service_name: string
+          signature?: string | null
+          tenant_id: string
+          webhook_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          payload?: Json
+          processed?: boolean | null
+          processed_at?: string | null
+          service_name?: string
+          signature?: string | null
+          tenant_id?: string
+          webhook_id?: string | null
+        }
+        Relationships: []
+      }
+      integrations: {
+        Row: {
+          config_json: Json
+          created_at: string
+          enabled: boolean | null
+          health_status: string | null
+          id: string
+          last_health_check: string | null
+          service_name: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          config_json?: Json
+          created_at?: string
+          enabled?: boolean | null
+          health_status?: string | null
+          id?: string
+          last_health_check?: string | null
+          service_name: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          config_json?: Json
+          created_at?: string
+          enabled?: boolean | null
+          health_status?: string | null
+          id?: string
+          last_health_check?: string | null
+          service_name?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       inventory_alerts: {
         Row: {
           acknowledged_at: string | null
@@ -2820,6 +3019,15 @@ export type Database = {
         }
         Returns: number
       }
+      check_integration_quota: {
+        Args: {
+          p_increment?: number
+          p_quota_type: string
+          p_service_name: string
+          p_tenant_id: string
+        }
+        Returns: boolean
+      }
       check_overdue_returns: {
         Args: Record<PropertyKey, never>
         Returns: undefined
@@ -2860,6 +3068,18 @@ export type Database = {
           resource_type?: string
         }
         Returns: undefined
+      }
+      log_integration_action: {
+        Args: {
+          p_action: string
+          p_error_message?: string
+          p_execution_time_ms?: number
+          p_integration_id: string
+          p_payload?: Json
+          p_status?: string
+          p_tenant_id: string
+        }
+        Returns: string
       }
     }
     Enums: {
