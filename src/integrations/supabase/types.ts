@@ -872,6 +872,95 @@ export type Database = {
           },
         ]
       }
+      exam_integrations: {
+        Row: {
+          created_at: string | null
+          exam_id: string | null
+          external_id: string | null
+          id: string
+          integration_type: string
+          last_sync_at: string | null
+          sync_settings: Json | null
+          sync_status: string | null
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          exam_id?: string | null
+          external_id?: string | null
+          id?: string
+          integration_type: string
+          last_sync_at?: string | null
+          sync_settings?: Json | null
+          sync_status?: string | null
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string | null
+          exam_id?: string | null
+          external_id?: string | null
+          id?: string
+          integration_type?: string
+          last_sync_at?: string | null
+          sync_settings?: Json | null
+          sync_status?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exam_integrations_exam_id_fkey"
+            columns: ["exam_id"]
+            isOneToOne: false
+            referencedRelation: "online_exams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exam_questions: {
+        Row: {
+          created_at: string | null
+          exam_id: string
+          id: string
+          is_mandatory: boolean | null
+          marks_allocated: number
+          question_id: string
+          question_order: number
+        }
+        Insert: {
+          created_at?: string | null
+          exam_id: string
+          id?: string
+          is_mandatory?: boolean | null
+          marks_allocated: number
+          question_id: string
+          question_order: number
+        }
+        Update: {
+          created_at?: string | null
+          exam_id?: string
+          id?: string
+          is_mandatory?: boolean | null
+          marks_allocated?: number
+          question_id?: string
+          question_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exam_questions_exam_id_fkey"
+            columns: ["exam_id"]
+            isOneToOne: false
+            referencedRelation: "online_exams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exam_questions_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "question_bank"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exam_schedules: {
         Row: {
           class_id: string
@@ -942,6 +1031,59 @@ export type Database = {
           },
           {
             foreignKeyName: "fk_exam_schedules_subject"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exam_templates: {
+        Row: {
+          created_at: string | null
+          created_by: string
+          description: string | null
+          duration_minutes: number
+          id: string
+          name: string
+          passing_marks: number | null
+          question_selection_strategy: Json | null
+          subject_id: string | null
+          tenant_id: string
+          total_marks: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by: string
+          description?: string | null
+          duration_minutes: number
+          id?: string
+          name: string
+          passing_marks?: number | null
+          question_selection_strategy?: Json | null
+          subject_id?: string | null
+          tenant_id: string
+          total_marks: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string
+          description?: string | null
+          duration_minutes?: number
+          id?: string
+          name?: string
+          passing_marks?: number | null
+          question_selection_strategy?: Json | null
+          subject_id?: string | null
+          tenant_id?: string
+          total_marks?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exam_templates_subject_id_fkey"
             columns: ["subject_id"]
             isOneToOne: false
             referencedRelation: "subjects"
@@ -1239,6 +1381,90 @@ export type Database = {
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gpa_scales: {
+        Row: {
+          created_at: string | null
+          grade_ranges: Json
+          id: string
+          is_default: boolean | null
+          scale_name: string
+          scale_type: string | null
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          grade_ranges: Json
+          id?: string
+          is_default?: boolean | null
+          scale_name: string
+          scale_type?: string | null
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string | null
+          grade_ranges?: Json
+          id?: string
+          is_default?: boolean | null
+          scale_name?: string
+          scale_type?: string | null
+          tenant_id?: string
+        }
+        Relationships: []
+      }
+      grading_rubrics: {
+        Row: {
+          created_at: string | null
+          created_by: string
+          criteria_description: string | null
+          criteria_name: string
+          id: string
+          max_points: number
+          point_scale: Json | null
+          question_id: string | null
+          subject_id: string | null
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by: string
+          criteria_description?: string | null
+          criteria_name: string
+          id?: string
+          max_points: number
+          point_scale?: Json | null
+          question_id?: string | null
+          subject_id?: string | null
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string
+          criteria_description?: string | null
+          criteria_name?: string
+          id?: string
+          max_points?: number
+          point_scale?: Json | null
+          question_id?: string | null
+          subject_id?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "grading_rubrics_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "question_bank"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "grading_rubrics_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
             referencedColumns: ["id"]
           },
         ]
@@ -2167,6 +2393,74 @@ export type Database = {
           },
         ]
       }
+      online_exams: {
+        Row: {
+          anti_cheating_settings: Json | null
+          auto_submit: boolean | null
+          created_at: string | null
+          created_by: string
+          exam_schedule_id: string | null
+          exam_template_id: string | null
+          id: string
+          instructions: string | null
+          proctoring_enabled: boolean | null
+          published: boolean | null
+          published_at: string | null
+          question_navigation: string | null
+          randomize_options: boolean | null
+          randomize_questions: boolean | null
+          tenant_id: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          anti_cheating_settings?: Json | null
+          auto_submit?: boolean | null
+          created_at?: string | null
+          created_by: string
+          exam_schedule_id?: string | null
+          exam_template_id?: string | null
+          id?: string
+          instructions?: string | null
+          proctoring_enabled?: boolean | null
+          published?: boolean | null
+          published_at?: string | null
+          question_navigation?: string | null
+          randomize_options?: boolean | null
+          randomize_questions?: boolean | null
+          tenant_id: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          anti_cheating_settings?: Json | null
+          auto_submit?: boolean | null
+          created_at?: string | null
+          created_by?: string
+          exam_schedule_id?: string | null
+          exam_template_id?: string | null
+          id?: string
+          instructions?: string | null
+          proctoring_enabled?: boolean | null
+          published?: boolean | null
+          published_at?: string | null
+          question_navigation?: string | null
+          randomize_options?: boolean | null
+          randomize_questions?: boolean | null
+          tenant_id?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "online_exams_exam_template_id_fkey"
+            columns: ["exam_template_id"]
+            isOneToOne: false
+            referencedRelation: "exam_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       page_customizations: {
         Row: {
           created_at: string | null
@@ -2361,6 +2655,74 @@ export type Database = {
           },
         ]
       }
+      question_bank: {
+        Row: {
+          ai_generated: boolean | null
+          bloom_taxonomy: string | null
+          correct_answer: string | null
+          created_at: string | null
+          created_by: string
+          difficulty_level: string | null
+          explanation: string | null
+          id: string
+          marks: number
+          options: Json | null
+          past_usage_count: number | null
+          question_text: string
+          question_type: string
+          subject_id: string | null
+          tags: string[] | null
+          tenant_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          ai_generated?: boolean | null
+          bloom_taxonomy?: string | null
+          correct_answer?: string | null
+          created_at?: string | null
+          created_by: string
+          difficulty_level?: string | null
+          explanation?: string | null
+          id?: string
+          marks?: number
+          options?: Json | null
+          past_usage_count?: number | null
+          question_text: string
+          question_type: string
+          subject_id?: string | null
+          tags?: string[] | null
+          tenant_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          ai_generated?: boolean | null
+          bloom_taxonomy?: string | null
+          correct_answer?: string | null
+          created_at?: string | null
+          created_by?: string
+          difficulty_level?: string | null
+          explanation?: string | null
+          id?: string
+          marks?: number
+          options?: Json | null
+          past_usage_count?: number | null
+          question_text?: string
+          question_type?: string
+          subject_id?: string | null
+          tags?: string[] | null
+          tenant_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "question_bank_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       school_domains: {
         Row: {
           created_at: string | null
@@ -2520,6 +2882,144 @@ export type Database = {
             columns: ["teacher_id"]
             isOneToOne: false
             referencedRelation: "teachers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_answers: {
+        Row: {
+          ai_grading_confidence: number | null
+          answer_options: string[] | null
+          answer_text: string | null
+          attempt_id: string
+          auto_graded: boolean | null
+          graded_at: string | null
+          graded_by: string | null
+          grader_feedback: string | null
+          id: string
+          marks_allocated: number
+          marks_obtained: number | null
+          question_id: string
+          submitted_at: string | null
+        }
+        Insert: {
+          ai_grading_confidence?: number | null
+          answer_options?: string[] | null
+          answer_text?: string | null
+          attempt_id: string
+          auto_graded?: boolean | null
+          graded_at?: string | null
+          graded_by?: string | null
+          grader_feedback?: string | null
+          id?: string
+          marks_allocated: number
+          marks_obtained?: number | null
+          question_id: string
+          submitted_at?: string | null
+        }
+        Update: {
+          ai_grading_confidence?: number | null
+          answer_options?: string[] | null
+          answer_text?: string | null
+          attempt_id?: string
+          auto_graded?: boolean | null
+          graded_at?: string | null
+          graded_by?: string | null
+          grader_feedback?: string | null
+          id?: string
+          marks_allocated?: number
+          marks_obtained?: number | null
+          question_id?: string
+          submitted_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_answers_attempt_id_fkey"
+            columns: ["attempt_id"]
+            isOneToOne: false
+            referencedRelation: "student_exam_attempts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_answers_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "question_bank"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_exam_attempts: {
+        Row: {
+          attempt_number: number | null
+          browser_info: Json | null
+          created_at: string | null
+          exam_id: string
+          grade: string | null
+          id: string
+          ip_address: unknown | null
+          percentage: number | null
+          proctoring_data: Json | null
+          started_at: string | null
+          status: string | null
+          student_id: string
+          submitted_at: string | null
+          tenant_id: string
+          time_taken_minutes: number | null
+          total_marks_obtained: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          attempt_number?: number | null
+          browser_info?: Json | null
+          created_at?: string | null
+          exam_id: string
+          grade?: string | null
+          id?: string
+          ip_address?: unknown | null
+          percentage?: number | null
+          proctoring_data?: Json | null
+          started_at?: string | null
+          status?: string | null
+          student_id: string
+          submitted_at?: string | null
+          tenant_id: string
+          time_taken_minutes?: number | null
+          total_marks_obtained?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          attempt_number?: number | null
+          browser_info?: Json | null
+          created_at?: string | null
+          exam_id?: string
+          grade?: string | null
+          id?: string
+          ip_address?: unknown | null
+          percentage?: number | null
+          proctoring_data?: Json | null
+          started_at?: string | null
+          status?: string | null
+          student_id?: string
+          submitted_at?: string | null
+          tenant_id?: string
+          time_taken_minutes?: number | null
+          total_marks_obtained?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_exam_attempts_exam_id_fkey"
+            columns: ["exam_id"]
+            isOneToOne: false
+            referencedRelation: "online_exams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_exam_attempts_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
             referencedColumns: ["id"]
           },
         ]
@@ -3006,11 +3506,86 @@ export type Database = {
           },
         ]
       }
+      transcripts: {
+        Row: {
+          academic_year: string
+          class_rank: number | null
+          credits_earned: number | null
+          cumulative_gpa: number | null
+          digitally_signed: boolean | null
+          drive_file_id: string | null
+          generated_at: string | null
+          generated_by: string
+          id: string
+          pdf_url: string | null
+          signature_hash: string | null
+          student_id: string
+          tenant_id: string
+          term: string | null
+          term_gpa: number | null
+          total_credits: number | null
+          total_students: number | null
+          transcript_data: Json
+        }
+        Insert: {
+          academic_year: string
+          class_rank?: number | null
+          credits_earned?: number | null
+          cumulative_gpa?: number | null
+          digitally_signed?: boolean | null
+          drive_file_id?: string | null
+          generated_at?: string | null
+          generated_by: string
+          id?: string
+          pdf_url?: string | null
+          signature_hash?: string | null
+          student_id: string
+          tenant_id: string
+          term?: string | null
+          term_gpa?: number | null
+          total_credits?: number | null
+          total_students?: number | null
+          transcript_data: Json
+        }
+        Update: {
+          academic_year?: string
+          class_rank?: number | null
+          credits_earned?: number | null
+          cumulative_gpa?: number | null
+          digitally_signed?: boolean | null
+          drive_file_id?: string | null
+          generated_at?: string | null
+          generated_by?: string
+          id?: string
+          pdf_url?: string | null
+          signature_hash?: string | null
+          student_id?: string
+          tenant_id?: string
+          term?: string | null
+          term_gpa?: number | null
+          total_credits?: number | null
+          total_students?: number | null
+          transcript_data?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transcripts_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      calculate_gpa: {
+        Args: { p_academic_year: string; p_student_id: string; p_term?: string }
+        Returns: number
+      }
       calculate_overdue_fine: {
         Args: {
           due_date_param: string

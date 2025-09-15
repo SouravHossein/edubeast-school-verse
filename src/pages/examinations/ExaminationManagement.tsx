@@ -8,44 +8,59 @@ import { InvigilatorAssignment } from '@/components/examinations/InvigilatorAssi
 import { MarksEntry } from '@/components/examinations/MarksEntry';
 import { ResultsManagement } from '@/components/examinations/ResultsManagement';
 import { ResultAnalytics } from '@/components/examinations/ResultAnalytics';
-import { Calendar, FileText, Users, Calculator, TrendingUp, Award } from 'lucide-react';
+import { Calendar, FileText, Users, Calculator, TrendingUp, Award, Brain, Monitor, GraduationCap } from 'lucide-react';
+import { QuestionBankManager } from '@/components/examinations/QuestionBankManager';
+import { OnlineExamPortal } from '@/components/examinations/OnlineExamPortal';
+import { TranscriptGenerator } from '@/components/examinations/TranscriptGenerator';
 
 const ExaminationManagement = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Examination Management</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Enhanced Examination & Grading System</h1>
           <p className="text-muted-foreground">
-            Manage exams, marks, and results comprehensively
+            Complete exam management with AI grading, question banks, online portals, and automated transcripts
           </p>
         </div>
       </div>
 
       <Tabs defaultValue="scheduling" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="scheduling" className="flex items-center gap-2">
-            <Calendar className="h-4 w-4" />
-            Exam Scheduling
+        <TabsList className="grid w-full grid-cols-9 text-xs">
+          <TabsTrigger value="scheduling" className="flex items-center gap-1">
+            <Calendar className="h-3 w-3" />
+            Scheduling
           </TabsTrigger>
-          <TabsTrigger value="papers" className="flex items-center gap-2">
-            <FileText className="h-4 w-4" />
-            Question Papers
+          <TabsTrigger value="papers" className="flex items-center gap-1">
+            <FileText className="h-3 w-3" />
+            Papers
           </TabsTrigger>
-          <TabsTrigger value="invigilators" className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
+          <TabsTrigger value="question-bank" className="flex items-center gap-1">
+            <Brain className="h-3 w-3" />
+            Question Bank
+          </TabsTrigger>
+          <TabsTrigger value="online-exam" className="flex items-center gap-1">
+            <Monitor className="h-3 w-3" />
+            Online Exam
+          </TabsTrigger>
+          <TabsTrigger value="invigilators" className="flex items-center gap-1">
+            <Users className="h-3 w-3" />
             Invigilators
           </TabsTrigger>
-          <TabsTrigger value="marks" className="flex items-center gap-2">
-            <Calculator className="h-4 w-4" />
+          <TabsTrigger value="marks" className="flex items-center gap-1">
+            <Calculator className="h-3 w-3" />
             Marks Entry
           </TabsTrigger>
-          <TabsTrigger value="results" className="flex items-center gap-2">
-            <Award className="h-4 w-4" />
+          <TabsTrigger value="results" className="flex items-center gap-1">
+            <Award className="h-3 w-3" />
             Results
           </TabsTrigger>
-          <TabsTrigger value="analytics" className="flex items-center gap-2">
-            <TrendingUp className="h-4 w-4" />
+          <TabsTrigger value="transcripts" className="flex items-center gap-1">
+            <GraduationCap className="h-3 w-3" />
+            Transcripts
+          </TabsTrigger>
+          <TabsTrigger value="analytics" className="flex items-center gap-1">
+            <TrendingUp className="h-3 w-3" />
             Analytics
           </TabsTrigger>
         </TabsList>
@@ -120,12 +135,54 @@ const ExaminationManagement = () => {
           </Card>
         </TabsContent>
 
+        <TabsContent value="question-bank">
+          <Card>
+            <CardHeader>
+              <CardTitle>AI-Powered Question Bank</CardTitle>
+              <CardDescription>
+                Create, manage, and organize questions with AI assistance and smart tagging
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <QuestionBankManager />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="online-exam">
+          <Card>
+            <CardHeader>
+              <CardTitle>Online Examination Portal</CardTitle>
+              <CardDescription>
+                Secure online exams with proctoring, anti-cheating, and real-time monitoring
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <OnlineExamPortal />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="transcripts">
+          <Card>
+            <CardHeader>
+              <CardTitle>Digital Transcript Generation</CardTitle>
+              <CardDescription>
+                Generate official transcripts with GPA calculations and digital signatures
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <TranscriptGenerator />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         <TabsContent value="analytics">
           <Card>
             <CardHeader>
-              <CardTitle>Result Analytics & Insights</CardTitle>
+              <CardTitle>Advanced Analytics & Insights</CardTitle>
               <CardDescription>
-                Analyze examination results and generate insights
+                Deep analytics with AI insights, performance trends, and predictive analytics
               </CardDescription>
             </CardHeader>
             <CardContent>
