@@ -1,23 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { 
-  FileText, 
-  Download, 
-  Share, 
-  Award, 
-  TrendingUp, 
-  Calendar,
-  GraduationCap,
-  Star,
-  Shield
-} from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
+import { Badge } from '@/components/ui/badge';
+import { Download, Share2, FileText, Calendar, User, GraduationCap } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface Student {
   id: string;
@@ -25,24 +16,25 @@ interface Student {
   profiles: {
     full_name: string;
     email: string;
-  } | null;
+  }[];
 }
 
 interface Subject {
   id: string;
   name: string;
+  code: string;
   credit_hours: number;
 }
 
 interface Grade {
-  subject_id: string;
   subject_name: string;
+  subject_code: string;
   credit_hours: number;
   marks_obtained: number;
   max_marks: number;
-  percentage: number;
   grade: string;
   gpa_points: number;
+  percentage: number;
 }
 
 interface Transcript {
@@ -56,22 +48,36 @@ interface Transcript {
   credits_earned: number;
   class_rank: number;
   total_students: number;
-  transcript_data: any;
   generated_at: string;
-  digitally_signed: boolean;
+  pdf_url?: string;
   drive_file_id?: string;
+  transcript_data: {
+    student_info: {
+      name: string;
+      student_id: string;
+      email: string;
+      class: string;
+    };
+    grades: Grade[];
+    summary: {
+      total_subjects: number;
+      subjects_passed: number;
+      subjects_failed: number;
+      attendance_percentage: number;
+    };
+  };
 }
 
-export const TranscriptGenerator = () => {
+export const TranscriptGenerator: React.FC = () => {
   const [students, setStudents] = useState<Student[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [transcripts, setTranscripts] = useState<Transcript[]>([]);
-  const [selectedStudent, setSelectedStudent] = useState<string>('');
-  const [selectedYear, setSelectedYear] = useState<string>('');
-  const [selectedTerm, setSelectedTerm] = useState<string>('');
+  const [selectedStudent, setSelectedStudent] = useState('');
+  const [selectedYear, setSelectedYear] = useState('');
+  const [selectedTerm, setSelectedTerm] = useState('');
   const [loading, setLoading] = useState(false);
-  const [previewTranscript, setPreviewTranscript] = useState<Transcript | null>(null);
-  const [showPreview, setShowPreview] = useState(false);
+  const [generating, setGenerating] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     fetchStudents();
@@ -80,7 +86,7 @@ export const TranscriptGenerator = () => {
   }, []);
 
   const fetchStudents = async () => {
-  const { data, error } = await supabase
+    const { data, error } = await supabase
       .from('students')
       .select(`
         id,
@@ -99,7 +105,7 @@ export const TranscriptGenerator = () => {
   const fetchSubjects = async () => {
     const { data, error } = await supabase
       .from('subjects')
-      .select('id, name, credit_hours')
+      .select('*')
       .eq('is_active', true);
 
     if (error) {
@@ -114,10 +120,7 @@ export const TranscriptGenerator = () => {
       .from('transcripts')
       .select(`
         *,
-        students(
-          student_id,
-          profiles(full_name)
-        )
+        students!inner(student_id, profiles!inner(full_name))
       `)
       .order('generated_at', { ascending: false });
 
@@ -129,157 +132,119 @@ export const TranscriptGenerator = () => {
   };
 
   const generateTranscript = async () => {
-    if (!selectedStudent || !selectedYear) {
+    if (!selectedStudent || !selectedYear || !selectedTerm) {
       toast({
-        title: "Error",
-        description: "Please select a student and academic year",
+        title: "Missing Information",
+        description: "Please select student, academic year, and term.",
         variant: "destructive",
       });
       return;
     }
 
-    setLoading(true);
+    setGenerating(true);
     try {
-      // Call the exam automation function to generate transcript
-      const response = await supabase.functions.invoke('exam-automation', {
+      const { data, error } = await supabase.functions.invoke('exam-automation', {
         body: {
           action: 'generate_transcript',
-          studentId: selectedStudent,
-          tenantId: 'current-tenant-id', // Get from context
-          options: {
-            academicYear: selectedYear,
-            term: selectedTerm
-          }
+          student_id: selectedStudent,
+          academic_year: selectedYear,
+          term: selectedTerm
         }
       });
 
-      if (response.error) throw response.error;
+      if (error) throw error;
 
       toast({
-        title: "Success",
-        description: "Transcript generated successfully!",
+        title: "Transcript Generated",
+        description: "The transcript has been successfully generated.",
       });
 
+      // Refresh transcripts list
       fetchTranscripts();
+      
+      // Reset form
       setSelectedStudent('');
       setSelectedYear('');
       setSelectedTerm('');
     } catch (error) {
       console.error('Error generating transcript:', error);
       toast({
-        title: "Error",
-        description: "Failed to generate transcript",
+        title: "Generation Failed",
+        description: "Failed to generate transcript. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setGenerating(false);
     }
-    setLoading(false);
   };
 
   const downloadTranscript = async (transcript: Transcript) => {
     try {
-      // Generate PDF (implement PDF generation logic)
-      const pdfBlob = await generatePDF(transcript);
-      
-      // Create download link
+      // Generate PDF (placeholder implementation)
+      const pdfBlob = new Blob(['PDF content'], { type: 'application/pdf' });
       const url = URL.createObjectURL(pdfBlob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `transcript-${transcript.student_id}-${transcript.academic_year}.pdf`;
+      a.download = `transcript_${transcript.transcript_data.student_info.student_id}_${transcript.academic_year}_${transcript.term}.pdf`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
       toast({
-        title: "Success",
-        description: "Transcript downloaded successfully!",
+        title: "Download Started",
+        description: "Transcript download has started.",
       });
     } catch (error) {
       console.error('Error downloading transcript:', error);
       toast({
-        title: "Error",
-        description: "Failed to download transcript",
+        title: "Download Failed",
+        description: "Failed to download transcript.",
         variant: "destructive",
       });
     }
-  };
-
-  const generatePDF = async (transcript: Transcript): Promise<Blob> => {
-    // This would implement actual PDF generation
-    // For now, return a mock blob
-    return new Blob(['PDF content'], { type: 'application/pdf' });
   };
 
   const shareTranscript = async (transcript: Transcript) => {
     try {
-      // Upload to Google Drive via integration
-      const response = await supabase.functions.invoke('google-integrations', {
+      const { data, error } = await supabase.functions.invoke('google-integrations', {
         body: {
           action: 'upload_to_drive',
-          tenantId: 'current-tenant-id',
-          fileData: {
-            name: `Transcript-${transcript.student_id}-${transcript.academic_year}.pdf`,
-            content: await generatePDF(transcript),
-            folderId: 'transcripts-folder-id'
-          }
+          file_data: transcript.transcript_data,
+          file_name: `Transcript_${transcript.transcript_data.student_info.student_id}_${transcript.academic_year}.pdf`,
+          folder_name: 'Transcripts'
         }
       });
 
-      if (response.error) throw response.error;
-
-      // Update transcript with Drive file ID
-      await supabase
-        .from('transcripts')
-        .update({
-          drive_file_id: response.data.fileId,
-          pdf_url: response.data.webViewLink
-        })
-        .eq('id', transcript.id);
+      if (error) throw error;
 
       toast({
-        title: "Success",
-        description: "Transcript shared to Google Drive!",
+        title: "Shared Successfully",
+        description: "Transcript has been uploaded to Google Drive.",
       });
     } catch (error) {
       console.error('Error sharing transcript:', error);
       toast({
-        title: "Error",
-        description: "Failed to share transcript",
+        title: "Share Failed",
+        description: "Failed to share transcript to Google Drive.",
         variant: "destructive",
       });
     }
   };
 
-  const getGradeColor = (grade: string) => {
-    switch (grade.charAt(0)) {
-      case 'A': return 'bg-green-100 text-green-800';
-      case 'B': return 'bg-blue-100 text-blue-800';
-      case 'C': return 'bg-yellow-100 text-yellow-800';
-      case 'D': return 'bg-orange-100 text-orange-800';
-      case 'F': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const formatGPA = (gpa: number) => {
-    return gpa?.toFixed(2) || '0.00';
-  };
+  const academicYears = ['2024-25', '2023-24', '2022-23', '2021-22'];
+  const terms = ['First Term', 'Second Term', 'Third Term', 'Annual'];
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-            <GraduationCap className="h-6 w-6" />
-            Transcript Generator
-          </h2>
-          <p className="text-muted-foreground">
-            Generate official academic transcripts with GPA calculations and digital signatures
-          </p>
-        </div>
+      <div>
+        <h2 className="text-3xl font-bold tracking-tight">Transcript Generator</h2>
+        <p className="text-muted-foreground">
+          Generate and manage academic transcripts for students
+        </p>
       </div>
 
-      {/* Generate New Transcript */}
+      {/* Generation Form */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -287,52 +252,67 @@ export const TranscriptGenerator = () => {
             Generate New Transcript
           </CardTitle>
           <CardDescription>
-            Create official transcripts for students with automatic GPA calculation
+            Select student and academic period to generate transcript
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Select value={selectedStudent} onValueChange={setSelectedStudent}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select Student" />
-              </SelectTrigger>
-              <SelectContent>
-                {students.map(student => (
-                  <SelectItem key={student.id} value={student.id}>
-                    {student.profiles.full_name} - {student.student_id}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={selectedYear} onValueChange={setSelectedYear}>
-              <SelectTrigger>
-                <SelectValue placeholder="Academic Year" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="2023-2024">2023-2024</SelectItem>
-                <SelectItem value="2024-2025">2024-2025</SelectItem>
-                <SelectItem value="2025-2026">2025-2026</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select value={selectedTerm} onValueChange={setSelectedTerm}>
-              <SelectTrigger>
-                <SelectValue placeholder="Term (Optional)" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">Full Year</SelectItem>
-                <SelectItem value="Fall">Fall Term</SelectItem>
-                <SelectItem value="Spring">Spring Term</SelectItem>
-                <SelectItem value="Summer">Summer Term</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Button onClick={generateTranscript} disabled={loading}>
-              <Award className="h-4 w-4 mr-2" />
-              Generate
-            </Button>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="student">Student</Label>
+              <Select value={selectedStudent} onValueChange={setSelectedStudent}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select student" />
+                </SelectTrigger>
+                <SelectContent>
+                  {students.map((student) => (
+                    <SelectItem key={student.id} value={student.id}>
+                      {student.profiles[0]?.full_name || 'Unknown'} ({student.student_id})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="year">Academic Year</Label>
+              <Select value={selectedYear} onValueChange={setSelectedYear}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select year" />
+                </SelectTrigger>
+                <SelectContent>
+                  {academicYears.map((year) => (
+                    <SelectItem key={year} value={year}>
+                      {year}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="term">Term</Label>
+              <Select value={selectedTerm} onValueChange={setSelectedTerm}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select term" />
+                </SelectTrigger>
+                <SelectContent>
+                  {terms.map((term) => (
+                    <SelectItem key={term} value={term}>
+                      {term}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
+          
+          <Button 
+            onClick={generateTranscript} 
+            disabled={generating || !selectedStudent || !selectedYear || !selectedTerm}
+            className="w-full md:w-auto"
+          >
+            {generating ? 'Generating...' : 'Generate Transcript'}
+          </Button>
         </CardContent>
       </Card>
 
@@ -341,7 +321,7 @@ export const TranscriptGenerator = () => {
         <CardHeader>
           <CardTitle>Generated Transcripts</CardTitle>
           <CardDescription>
-            View, download, and manage student transcripts
+            View and manage previously generated transcripts
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -353,9 +333,7 @@ export const TranscriptGenerator = () => {
                 <TableHead>Term</TableHead>
                 <TableHead>GPA</TableHead>
                 <TableHead>Credits</TableHead>
-                <TableHead>Rank</TableHead>
                 <TableHead>Generated</TableHead>
-                <TableHead>Status</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -363,96 +341,41 @@ export const TranscriptGenerator = () => {
               {transcripts.map((transcript) => (
                 <TableRow key={transcript.id}>
                   <TableCell>
-                    <div>
-                      <p className="font-medium">
-                        {transcript.transcript_data?.student?.name}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {transcript.transcript_data?.student?.studentId}
-                      </p>
+                    <div className="font-medium">
+                      {transcript.transcript_data.student_info.name}
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      {transcript.transcript_data.student_info.student_id}
                     </div>
                   </TableCell>
                   <TableCell>{transcript.academic_year}</TableCell>
-                  <TableCell>{transcript.term || 'Full Year'}</TableCell>
+                  <TableCell>{transcript.term}</TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
-                      <TrendingUp className="h-4 w-4 text-green-500" />
-                      <span className="font-mono">
-                        {formatGPA(transcript.cumulative_gpa)}
-                      </span>
-                    </div>
+                    <Badge variant="secondary">
+                      {transcript.cumulative_gpa?.toFixed(2) || 'N/A'}
+                    </Badge>
                   </TableCell>
                   <TableCell>
                     {transcript.credits_earned}/{transcript.total_credits}
                   </TableCell>
                   <TableCell>
-                    {transcript.class_rank && (
-                      <Badge variant="outline">
-                        #{transcript.class_rank} of {transcript.total_students}
-                      </Badge>
-                    )}
+                    {new Date(transcript.generated_at).toLocaleDateString()}
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                      <Calendar className="h-3 w-3" />
-                      {new Date(transcript.generated_at).toLocaleDateString()}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-1">
-                      {transcript.digitally_signed && (
-                        <Badge variant="secondary">
-                          <Shield className="h-3 w-3 mr-1" />
-                          Signed
-                        </Badge>
-                      )}
-                      {transcript.drive_file_id && (
-                        <Badge variant="outline">
-                          <Share className="h-3 w-3 mr-1" />
-                          Shared
-                        </Badge>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-1">
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setPreviewTranscript(transcript)}
-                          >
-                            <FileText className="h-4 w-4" />
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-                          <DialogHeader>
-                            <DialogTitle>Transcript Preview</DialogTitle>
-                            <DialogDescription>
-                              Official Academic Transcript
-                            </DialogDescription>
-                          </DialogHeader>
-                          {previewTranscript && (
-                            <TranscriptPreview transcript={previewTranscript} />
-                          )}
-                        </DialogContent>
-                      </Dialog>
-                      
+                    <div className="flex gap-2">
                       <Button
-                        variant="ghost"
                         size="sm"
+                        variant="outline"
                         onClick={() => downloadTranscript(transcript)}
                       >
                         <Download className="h-4 w-4" />
                       </Button>
-                      
                       <Button
-                        variant="ghost"
                         size="sm"
+                        variant="outline"
                         onClick={() => shareTranscript(transcript)}
                       >
-                        <Share className="h-4 w-4" />
+                        <Share2 className="h-4 w-4" />
                       </Button>
                     </div>
                   </TableCell>
@@ -460,100 +383,152 @@ export const TranscriptGenerator = () => {
               ))}
             </TableBody>
           </Table>
+          
+          {transcripts.length === 0 && (
+            <div className="text-center py-8 text-muted-foreground">
+              No transcripts generated yet
+            </div>
+          )}
         </CardContent>
       </Card>
+
+      {/* Preview Section */}
+      {transcripts.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Latest Transcript Preview</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <TranscriptPreview transcript={transcripts[0]} />
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };
 
 const TranscriptPreview: React.FC<{ transcript: Transcript }> = ({ transcript }) => {
-  const data = transcript.transcript_data;
-  
+  const getGradeColor = (grade: string) => {
+    switch (grade.toUpperCase()) {
+      case 'A+':
+        return 'bg-green-100 text-green-800';
+      case 'A':
+        return 'bg-green-100 text-green-700';
+      case 'B+':
+        return 'bg-blue-100 text-blue-800';
+      case 'B':
+        return 'bg-blue-100 text-blue-700';
+      case 'C+':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'C':
+        return 'bg-yellow-100 text-yellow-700';
+      case 'D':
+        return 'bg-orange-100 text-orange-700';
+      case 'F':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-700';
+    }
+  };
+
+  const formatGPA = (gpa: number | null) => {
+    return gpa ? gpa.toFixed(2) : 'N/A';
+  };
+
   return (
-    <div className="space-y-6 p-6 bg-white">
+    <div className="space-y-6 p-6 bg-white border rounded-lg">
       {/* Header */}
       <div className="text-center border-b pb-4">
-        <h1 className="text-2xl font-bold">Official Academic Transcript</h1>
-        <p className="text-muted-foreground">Academic Year {transcript.academic_year}</p>
+        <h3 className="text-2xl font-bold">Academic Transcript</h3>
+        <p className="text-muted-foreground">Official Academic Record</p>
       </div>
 
       {/* Student Information */}
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <h3 className="font-semibold mb-2">Student Information</h3>
-          <div className="space-y-1 text-sm">
-            <p><strong>Name:</strong> {data.student?.name}</p>
-            <p><strong>Student ID:</strong> {data.student?.studentId}</p>
-            <p><strong>Admission Number:</strong> {data.student?.admissionNumber}</p>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <User className="h-4 w-4" />
+            <span className="font-medium">Student Information</span>
+          </div>
+          <div className="ml-6 space-y-1">
+            <p><span className="font-medium">Name:</span> {transcript.transcript_data.student_info.name}</p>
+            <p><span className="font-medium">Student ID:</span> {transcript.transcript_data.student_info.student_id}</p>
+            <p><span className="font-medium">Email:</span> {transcript.transcript_data.student_info.email}</p>
           </div>
         </div>
         
-        <div>
-          <h3 className="font-semibold mb-2">Academic Summary</h3>
-          <div className="space-y-1 text-sm">
-            <p><strong>Cumulative GPA:</strong> {formatGPA(transcript.cumulative_gpa)}</p>
-            <p><strong>Credits Earned:</strong> {transcript.credits_earned}</p>
-            <p><strong>Class Rank:</strong> #{transcript.class_rank} of {transcript.total_students}</p>
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Calendar className="h-4 w-4" />
+            <span className="font-medium">Academic Summary</span>
+          </div>
+          <div className="ml-6 space-y-1">
+            <p><span className="font-medium">Academic Year:</span> {transcript.academic_year}</p>
+            <p><span className="font-medium">Term:</span> {transcript.term}</p>
+            <p><span className="font-medium">Cumulative GPA:</span> {formatGPA(transcript.cumulative_gpa)}</p>
+            <p><span className="font-medium">Term GPA:</span> {formatGPA(transcript.term_gpa)}</p>
           </div>
         </div>
       </div>
 
-      {/* Grades Table */}
+      {/* Academic Record */}
       <div>
-        <h3 className="font-semibold mb-4">Academic Record</h3>
+        <div className="flex items-center gap-2 mb-4">
+          <GraduationCap className="h-4 w-4" />
+          <span className="font-medium">Academic Record</span>
+        </div>
+        
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Subject</TableHead>
+              <TableHead>Code</TableHead>
               <TableHead>Credits</TableHead>
               <TableHead>Marks</TableHead>
-              <TableHead>Percentage</TableHead>
               <TableHead>Grade</TableHead>
+              <TableHead>GPA Points</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {data.grades?.map((grade: Grade, index: number) => (
+            {transcript.transcript_data.grades.map((grade, index) => (
               <TableRow key={index}>
                 <TableCell>{grade.subject_name}</TableCell>
+                <TableCell>{grade.subject_code}</TableCell>
                 <TableCell>{grade.credit_hours}</TableCell>
                 <TableCell>{grade.marks_obtained}/{grade.max_marks}</TableCell>
-                <TableCell>{grade.percentage.toFixed(1)}%</TableCell>
                 <TableCell>
                   <Badge className={getGradeColor(grade.grade)}>
                     {grade.grade}
                   </Badge>
                 </TableCell>
+                <TableCell>{grade.gpa_points.toFixed(2)}</TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </div>
 
-      {/* Footer */}
-      <div className="text-center text-xs text-muted-foreground border-t pt-4">
-        <p>Generated on {new Date(transcript.generated_at).toLocaleDateString()}</p>
-        {transcript.digitally_signed && (
-          <p className="flex items-center justify-center gap-1 mt-1">
-            <Shield className="h-3 w-3" />
-            Digitally Signed and Verified
-          </p>
-        )}
+      {/* Summary */}
+      <div className="border-t pt-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+          <div>
+            <p className="text-2xl font-bold">{transcript.transcript_data.summary.total_subjects}</p>
+            <p className="text-sm text-muted-foreground">Total Subjects</p>
+          </div>
+          <div>
+            <p className="text-2xl font-bold text-green-600">{transcript.transcript_data.summary.subjects_passed}</p>
+            <p className="text-sm text-muted-foreground">Passed</p>
+          </div>
+          <div>
+            <p className="text-2xl font-bold text-red-600">{transcript.transcript_data.summary.subjects_failed}</p>
+            <p className="text-sm text-muted-foreground">Failed</p>
+          </div>
+          <div>
+            <p className="text-2xl font-bold">{transcript.credits_earned}/{transcript.total_credits}</p>
+            <p className="text-sm text-muted-foreground">Credits Earned</p>
+          </div>
+        </div>
       </div>
     </div>
   );
-};
-
-const getGradeColor = (grade: string) => {
-  switch (grade.charAt(0)) {
-    case 'A': return 'bg-green-100 text-green-800';
-    case 'B': return 'bg-blue-100 text-blue-800';
-    case 'C': return 'bg-yellow-100 text-yellow-800';
-    case 'D': return 'bg-orange-100 text-orange-800';
-    case 'F': return 'bg-red-100 text-red-800';
-    default: return 'bg-gray-100 text-gray-800';
-  }
-};
-
-const formatGPA = (gpa: number) => {
-  return gpa?.toFixed(2) || '0.00';
 };

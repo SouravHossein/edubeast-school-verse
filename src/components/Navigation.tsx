@@ -59,9 +59,9 @@ const Navigation = () => {
                     </div>
                     <div className="absolute inset-0 bg-gradient-to-br from-teal-400 to-yellow-400 rounded-xl blur-lg opacity-0 group-hover:opacity-30 transition-opacity duration-300"></div>
                   </div>
-                  <span className="text-xl font-black bg-gradient-to-r from-teal-400 to-yellow-400 bg-clip-text text-transparent font-mono hidden sm:block">
-                    FUTURE ACADEMY
-                  </span>
+                   <span className="text-xl font-black bg-gradient-to-r from-teal-400 to-yellow-400 bg-clip-text text-transparent font-mono hidden sm:block">
+                     EduBeast
+                   </span>
                 </a>
               </div>
 

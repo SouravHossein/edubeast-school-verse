@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import Navigation from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { CheckCircle2, Layers, ShieldCheck, BarChart3, Users, Cpu } from "lucide-react";
+import { CheckCircle2, Layers, ShieldCheck, BarChart3, Users, Cpu, BookOpen, Calendar, MessageSquare } from "lucide-react";
 
 const SaasHome: React.FC = () => {
   // Basic SEO for the landing page
