@@ -25,7 +25,7 @@ export const useRBAC = () => {
 interface RBACProviderProps {
   children: ReactNode;
 }
-
+ 
 export const RBACProvider = ({ children }: RBACProviderProps) => {
   const { user } = useAuth();
   const { isFeatureEnabled } = useTenant();

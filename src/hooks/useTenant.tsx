@@ -1,6 +1,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
 interface Tenant {
@@ -74,18 +75,26 @@ export const TenantProvider = ({ children }: TenantProviderProps) => {
   const [features, setFeatures] = useState<TenantFeature[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { user, isLoading: authLoading } = useAuth();
 
   useEffect(() => {
-    loadTenantData();
-  }, []);
+    if (!authLoading) {
+      loadTenantData();
+    }
+  }, [user, authLoading]);
 
   const loadTenantData = async () => {
     try {
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
       // Get current user's tenant
       const { data: profile } = await supabase
         .from('profiles')
         .select('tenant_id')
-        .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
+        .eq('user_id', user.id)
         .single();
 
       if (profile?.tenant_id) {
