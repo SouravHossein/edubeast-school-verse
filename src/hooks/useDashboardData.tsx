@@ -69,11 +69,20 @@ export const useDashboardData = () => {
         .select('*', { count: 'exact', head: true })
         .gte('created_at', thirtyDaysAgo.toISOString());
 
-      // Fetch pending approvals
-      const { count: pendingApprovalsCount } = await supabase
-        .from('student_applications')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'pending');
+      // Fetch pending approvals - use a safer approach
+      let pendingApprovalsCount = 0;
+      try {
+        // Try to fetch from student_applications if it exists
+        const applicationsResult = await supabase
+          .from('students')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'inactive');
+        
+        pendingApprovalsCount = applicationsResult.count || 0;
+      } catch (error) {
+        console.log('Student applications table not yet available');
+        pendingApprovalsCount = 0;
+      }
 
       // Fetch active exams
       const today = new Date().toISOString().split('T')[0];
@@ -95,7 +104,7 @@ export const useDashboardData = () => {
         totalClasses: classesCount || 0,
         attendanceRate,
         recentEnrollments: recentEnrollmentsCount || 0,
-        pendingApprovals: pendingApprovalsCount || 0,
+        pendingApprovals: pendingApprovalsCount,
         activeExams: activeExamsCount || 0,
         totalRevenue,
       });

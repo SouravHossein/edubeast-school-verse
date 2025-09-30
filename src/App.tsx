@@ -46,7 +46,7 @@ import { SchoolOnboardingWizard } from '@/components/tenant/SchoolOnboardingWiza
 import { useTenant } from '@/hooks/useTenant';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader } from 'lucide-react';
-import { RBACProvider } from './hooks/useRBAC';
+import { ThemeProvider } from '@/components/theme/ThemeProvider';
 
 const queryClient = new QueryClient();
 
@@ -112,7 +112,7 @@ function App() {
         <TenantProvider>
           <SiteThemeProvider>
             <Router>
-            <RBACProvider>
+            <ThemeProvider>
               <div className="min-h-screen bg-background">
                 <Routes>
                   {/* Public Landing Page */}
@@ -230,7 +230,7 @@ function App() {
                 </Routes>
                 <Toaster />
               </div>
-            </RBACProvider>
+            </ThemeProvider>
             </Router>
           </SiteThemeProvider>
         </TenantProvider>

@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      activity_logs: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          ip_address: unknown | null
+          metadata: Json | null
+          module: string
+          resource_id: string | null
+          resource_type: string | null
+          tenant_id: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          metadata?: Json | null
+          module: string
+          resource_id?: string | null
+          resource_type?: string | null
+          tenant_id: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          metadata?: Json | null
+          module?: string
+          resource_id?: string | null
+          resource_type?: string | null
+          tenant_id?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       admin_audit_logs: {
         Row: {
           action: string
@@ -2948,6 +2990,75 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      student_applications: {
+        Row: {
+          address: string | null
+          applicant_email: string
+          applicant_name: string
+          applicant_phone: string | null
+          application_data: Json | null
+          created_at: string
+          date_of_birth: string | null
+          gender: string | null
+          grade_applying_for: string
+          id: string
+          notes: string | null
+          parent_email: string | null
+          parent_name: string | null
+          parent_phone: string | null
+          previous_school: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          applicant_email: string
+          applicant_name: string
+          applicant_phone?: string | null
+          application_data?: Json | null
+          created_at?: string
+          date_of_birth?: string | null
+          gender?: string | null
+          grade_applying_for: string
+          id?: string
+          notes?: string | null
+          parent_email?: string | null
+          parent_name?: string | null
+          parent_phone?: string | null
+          previous_school?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          applicant_email?: string
+          applicant_name?: string
+          applicant_phone?: string | null
+          application_data?: Json | null
+          created_at?: string
+          date_of_birth?: string | null
+          gender?: string | null
+          grade_applying_for?: string
+          id?: string
+          notes?: string | null
+          parent_email?: string | null
+          parent_name?: string | null
+          parent_phone?: string | null
+          previous_school?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       student_exam_attempts: {
         Row: {
