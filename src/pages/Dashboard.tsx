@@ -3,6 +3,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { useDashboardData } from '@/hooks/useDashboardData';
+import { useActivityLog } from '@/hooks/useActivityLog';
 import { 
   Users, 
   BookOpen, 
@@ -13,7 +15,9 @@ import {
   Bell,
   CheckCircle,
   AlertCircle,
-  Star
+  Star,
+  DollarSign,
+  GraduationCap
 } from 'lucide-react';
 
 const Dashboard = () => {
@@ -57,25 +61,45 @@ const Dashboard = () => {
 };
 
 const AdminDashboard = () => {
-  const stats = [
-    { title: 'Total Students', value: '1,245', change: '+12%', icon: Users, color: 'text-blue-600' },
-    { title: 'Active Teachers', value: '85', change: '+3%', icon: BookOpen, color: 'text-green-600' },
-    { title: 'Classes Running', value: '42', change: '0%', icon: Calendar, color: 'text-purple-600' },
-    { title: 'Attendance Rate', value: '94%', change: '+2%', icon: TrendingUp, color: 'text-orange-600' },
-  ];
+  const { stats, recentActivities, loading } = useDashboardData();
+  const { logActivity } = useActivityLog();
 
-  const recentActivities = [
-    { type: 'success', message: 'New student enrollment approved', time: '2 hours ago' },
-    { type: 'warning', message: 'Fee payment reminder sent to 15 parents', time: '4 hours ago' },
-    { type: 'info', message: 'Monthly report generated successfully', time: '1 day ago' },
-    { type: 'success', message: 'New teacher onboarded', time: '2 days ago' },
+  const dashboardStats = [
+    { 
+      title: 'Total Students', 
+      value: loading ? '...' : stats.totalStudents.toString(), 
+      change: stats.recentEnrollments > 0 ? `+${stats.recentEnrollments}` : '0', 
+      icon: Users, 
+      color: 'text-blue-600' 
+    },
+    { 
+      title: 'Active Teachers', 
+      value: loading ? '...' : stats.totalTeachers.toString(), 
+      change: '+3%', 
+      icon: GraduationCap, 
+      color: 'text-green-600' 
+    },
+    { 
+      title: 'Active Classes', 
+      value: loading ? '...' : stats.totalClasses.toString(), 
+      change: '0%', 
+      icon: BookOpen, 
+      color: 'text-purple-600' 
+    },
+    { 
+      title: 'Attendance Rate', 
+      value: loading ? '...' : `${stats.attendanceRate}%`, 
+      change: '+2%', 
+      icon: TrendingUp, 
+      color: 'text-orange-600' 
+    },
   ];
 
   return (
     <>
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat, index) => {
+        {dashboardStats.map((stat, index) => {
           const IconComponent = stat.icon;
           return (
             <Card key={index}>

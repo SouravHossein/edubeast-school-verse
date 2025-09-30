@@ -127,7 +127,19 @@ export const TranscriptGenerator: React.FC = () => {
     if (error) {
       console.error('Error fetching transcripts:', error);
     } else {
-      setTranscripts(data || []);
+      // Transform the data to handle JSON type for transcript_data
+      const transformedData = data?.map(item => ({
+        ...item,
+        transcript_data: typeof item.transcript_data === 'string' 
+          ? JSON.parse(item.transcript_data) 
+          : (item.transcript_data as any) || {
+              student_info: { name: '', student_id: '', email: '', class: '' },
+              grades: [],
+              summary: { total_subjects: 0, subjects_passed: 0, subjects_failed: 0, attendance_percentage: 0 }
+            }
+      })) as Transcript[];
+      
+      setTranscripts(transformedData || []);
     }
   };
 
