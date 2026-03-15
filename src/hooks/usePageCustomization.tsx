@@ -90,7 +90,7 @@ export function usePageCustomization() {
     queryFn: async () => {
       if (!tenant?.id) return [];
       
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from('page_customizations')
         .select('*')
         .eq('tenant_id', tenant.id)
