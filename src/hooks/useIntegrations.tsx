@@ -3,6 +3,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useTenant } from './useTenant';
 import { toast } from 'sonner';
 
+const db = supabase as any;
+
 export interface Integration {
   id: string;
   tenant_id: string;
