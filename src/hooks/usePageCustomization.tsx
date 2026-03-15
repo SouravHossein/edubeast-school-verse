@@ -106,7 +106,7 @@ export function usePageCustomization() {
   const getPageCustomization = async (pageSlug: string) => {
     if (!tenant?.id) return null;
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .rpc('get_page_customization', {
         p_tenant_id: tenant.id,
         p_page_slug: pageSlug
