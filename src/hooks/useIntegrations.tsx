@@ -133,7 +133,7 @@ export const useIntegrations = () => {
   // Delete integration
   const deleteIntegration = async (integrationId: string) => {
     try {
-      const { error } = await supabase
+      const { error } = await db
         .from('integrations')
         .delete()
         .eq('id', integrationId);
