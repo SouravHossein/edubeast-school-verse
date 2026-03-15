@@ -162,7 +162,7 @@ export function usePageCustomization() {
     mutationFn: async (pageSlug: string) => {
       if (!tenant?.id) throw new Error('Unauthorized');
 
-      const { error } = await supabase
+      const { error } = await db
         .from('page_customizations')
         .delete()
         .eq('tenant_id', tenant.id)
