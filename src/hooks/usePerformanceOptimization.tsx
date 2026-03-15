@@ -62,7 +62,7 @@ export const useOptimizedQueries = () => {
     return queryWithCache(
       `students_${tenantId}_${limit}`,
       async () => {
-        const { data, error } = await supabase
+        const { data, error } = await (supabase as any)
           .from('students')
           .select('id, full_name, email, roll_number, is_active')
           .eq('tenant_id', tenantId)

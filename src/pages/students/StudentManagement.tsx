@@ -11,7 +11,7 @@ interface Class {
   name: string;
   code: string;
   section?: string;
-  grade_level: number;
+  grade_level: string | number;
 }
 
 const StudentManagement = () => {
