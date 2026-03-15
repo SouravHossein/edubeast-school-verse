@@ -115,7 +115,7 @@ export const useIntegrations = () => {
   // Enable/disable integration
   const toggleIntegration = async (integrationId: string, enabled: boolean) => {
     try {
-      const { error } = await supabase
+      const { error } = await db
         .from('integrations')
         .update({ enabled })
         .eq('id', integrationId);
