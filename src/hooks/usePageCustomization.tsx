@@ -74,7 +74,7 @@ export function usePageCustomization() {
   const { data: sectionTemplates, isLoading: sectionsLoading } = useQuery({
     queryKey: ['page-sections'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from('page_sections')
         .select('*')
         .order('section_name');
