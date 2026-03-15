@@ -189,7 +189,7 @@ export function usePageCustomization() {
       // For now, we'll just store the file info
       const fileUrl = URL.createObjectURL(file);
       
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from('file_uploads')
         .insert({
           tenant_id: tenant.id,

@@ -12,7 +12,7 @@ interface Class {
   id: string;
   name: string;
   section?: string;
-  grade_level: number;
+  grade_level: string | number;
 }
 
 const AttendanceManagement = () => {

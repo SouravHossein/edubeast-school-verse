@@ -165,7 +165,7 @@ export const useIntegrations = () => {
       const healthStatus = data.success ? 'healthy' : 'error';
 
       // Update health status
-      await supabase
+      await db
         .from('integrations')
         .update({
           health_status: healthStatus,

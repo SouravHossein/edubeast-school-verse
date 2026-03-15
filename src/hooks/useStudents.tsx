@@ -93,7 +93,7 @@ export const useStudents = () => {
     try {
       const { data, error } = await supabase
         .from('students')
-        .insert([studentData])
+        .insert([{ ...studentData, tenant_id: '' }] as any)
         .select(`
           *,
           profiles!inner(full_name, email, phone, avatar_url),

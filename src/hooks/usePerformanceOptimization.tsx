@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 // Debounce hook for performance optimization
 export const useDebounce = (callback: (...args: any[]) => void, delay: number) => {
-  const timeoutRef = useRef<NodeJS.Timeout>();
+  const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
   return useCallback((...args: any[]) => {
     if (timeoutRef.current) {
