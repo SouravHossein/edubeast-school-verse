@@ -86,7 +86,7 @@ export const useIntegrations = () => {
     if (!tenant?.id) return null;
 
     try {
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from('integrations')
         .upsert({
           tenant_id: tenant.id,
