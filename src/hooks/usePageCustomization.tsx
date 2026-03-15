@@ -4,6 +4,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTenant } from '@/hooks/useTenant';
 import { toast } from 'sonner';
 
+const db = supabase as any;
+
 export interface PageSection {
   id: string;
   type: string;
