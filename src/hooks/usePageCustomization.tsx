@@ -60,7 +60,7 @@ export function usePageCustomization() {
   const { data: pageTemplates, isLoading: templatesLoading } = useQuery({
     queryKey: ['page-templates'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from('page_templates')
         .select('*')
         .order('page_slug');
