@@ -60,7 +60,7 @@ export const useIntegrations = () => {
     if (!tenant?.id) return;
 
     try {
-      let query = supabase
+      let query = db
         .from('integration_logs')
         .select('*')
         .eq('tenant_id', tenant.id)
