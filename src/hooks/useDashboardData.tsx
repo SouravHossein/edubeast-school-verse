@@ -24,14 +24,8 @@ export interface RecentActivity {
 
 export const useDashboardData = () => {
   const [stats, setStats] = useState<DashboardStats>({
-    totalStudents: 0,
-    totalTeachers: 0,
-    totalClasses: 0,
-    attendanceRate: 0,
-    recentEnrollments: 0,
-    pendingApprovals: 0,
-    activeExams: 0,
-    totalRevenue: 0,
+    totalStudents: 0, totalTeachers: 0, totalClasses: 0, attendanceRate: 0,
+    recentEnrollments: 0, pendingApprovals: 0, activeExams: 0, totalRevenue: 0,
   });
   const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
   const [loading, setLoading] = useState(true);
@@ -42,84 +36,42 @@ export const useDashboardData = () => {
     try {
       setLoading(true);
 
-      // Fetch students count
       const { count: studentsCount } = await supabase
-        .from('students')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'active');
-
-      // Fetch teachers count
+        .from('students').select('*', { count: 'exact', head: true }).eq('status', 'active');
       const { count: teachersCount } = await supabase
-        .from('teachers')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'active');
-
-      // Fetch classes count
+        .from('teachers').select('*', { count: 'exact', head: true }).eq('status', 'active');
       const { count: classesCount } = await supabase
-        .from('classes')
-        .select('*', { count: 'exact', head: true })
-        .eq('is_active', true);
+        .from('classes').select('*', { count: 'exact', head: true }).eq('is_active', true);
 
-      // Fetch recent enrollments (last 30 days)
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      
       const { count: recentEnrollmentsCount } = await supabase
-        .from('students')
-        .select('*', { count: 'exact', head: true })
-        .gte('created_at', thirtyDaysAgo.toISOString());
+        .from('students').select('*', { count: 'exact', head: true }).gte('created_at', thirtyDaysAgo.toISOString());
 
-      // Fetch pending approvals - use a safer approach
-      let pendingApprovalsCount = 0;
-      try {
-        // Try to fetch from student_applications if it exists
-        const applicationsResult = await supabase
-          .from('students')
-          .select('*', { count: 'exact', head: true })
-          .eq('status', 'inactive');
-        
-        pendingApprovalsCount = applicationsResult.count || 0;
-      } catch (error) {
-        console.log('Student applications table not yet available');
-        pendingApprovalsCount = 0;
-      }
-
-      // Fetch active exams
       const today = new Date().toISOString().split('T')[0];
       const { count: activeExamsCount } = await supabase
-        .from('examinations')
-        .select('*', { count: 'exact', head: true })
-        .eq('is_active', true)
-        .gte('end_date', today);
-
-      // Calculate attendance rate (mock for now - would need attendance records)
-      const attendanceRate = 94; // Placeholder
-
-      // Calculate total revenue (mock for now - would need payment records)
-      const totalRevenue = 25000; // Placeholder
+        .from('examinations').select('*', { count: 'exact', head: true }).eq('is_active', true).gte('end_date', today);
 
       setStats({
         totalStudents: studentsCount || 0,
         totalTeachers: teachersCount || 0,
         totalClasses: classesCount || 0,
-        attendanceRate,
+        attendanceRate: 94,
         recentEnrollments: recentEnrollmentsCount || 0,
-        pendingApprovals: pendingApprovalsCount,
+        pendingApprovals: 0,
         activeExams: activeExamsCount || 0,
-        totalRevenue,
+        totalRevenue: 0,
       });
 
-      // Fetch recent activities
       const activities = await getRecentActivities();
-      const formattedActivities = activities.map(activity => ({
-        id: activity.id,
-        type: getActivityType(activity.action),
-        message: formatActivityMessage(activity),
-        time: formatTime(activity.created_at),
-        module: activity.module,
+      const formatted = activities.map(a => ({
+        id: a.id,
+        type: (a.action.includes('create') ? 'success' : a.action.includes('delete') ? 'error' : 'info') as RecentActivity['type'],
+        message: `${a.action} in ${a.module}`,
+        time: formatTime(a.created_at),
+        module: a.module,
       }));
-
-      setRecentActivities(formattedActivities);
+      setRecentActivities(formatted);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {
@@ -127,58 +79,16 @@ export const useDashboardData = () => {
     }
   };
 
-  const getActivityType = (action: string): 'success' | 'warning' | 'info' | 'error' => {
-    if (action.includes('create') || action.includes('approve')) return 'success';
-    if (action.includes('delete') || action.includes('reject')) return 'error';
-    if (action.includes('update') || action.includes('modify')) return 'warning';
-    return 'info';
-  };
-
-  const formatActivityMessage = (activity: any): string => {
-    const { module, action, resource_type, profiles } = activity;
-    const userName = profiles?.full_name || 'Someone';
-    
-    switch (action) {
-      case 'create':
-        return `${userName} created a new ${resource_type || module}`;
-      case 'update':
-        return `${userName} updated ${resource_type || module}`;
-      case 'delete':
-        return `${userName} deleted ${resource_type || module}`;
-      case 'approve':
-        return `${userName} approved ${resource_type || module}`;
-      case 'login':
-        return `${userName} logged into the system`;
-      default:
-        return `${userName} performed ${action} in ${module}`;
-    }
-  };
-
   const formatTime = (timestamp: string): string => {
-    const now = new Date();
-    const time = new Date(timestamp);
-    const diffInMinutes = Math.floor((now.getTime() - time.getTime()) / (1000 * 60));
-    
-    if (diffInMinutes < 1) return 'Just now';
-    if (diffInMinutes < 60) return `${diffInMinutes} minutes ago`;
-    
-    const diffInHours = Math.floor(diffInMinutes / 60);
-    if (diffInHours < 24) return `${diffInHours} hours ago`;
-    
-    const diffInDays = Math.floor(diffInHours / 24);
-    return `${diffInDays} days ago`;
+    const diffMin = Math.floor((Date.now() - new Date(timestamp).getTime()) / 60000);
+    if (diffMin < 1) return 'Just now';
+    if (diffMin < 60) return `${diffMin} minutes ago`;
+    const diffHours = Math.floor(diffMin / 60);
+    if (diffHours < 24) return `${diffHours} hours ago`;
+    return `${Math.floor(diffHours / 24)} days ago`;
   };
 
-  useEffect(() => {
-    if (user) {
-      fetchDashboardStats();
-    }
-  }, [user]);
+  useEffect(() => { if (user) fetchDashboardStats(); }, [user]);
 
-  return {
-    stats,
-    recentActivities,
-    loading,
-    refetch: fetchDashboardStats,
-  };
+  return { stats, recentActivities, loading, refetch: fetchDashboardStats };
 };

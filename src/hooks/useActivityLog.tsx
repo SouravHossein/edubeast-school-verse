@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
@@ -15,10 +15,7 @@ export interface ActivityLog {
   ip_address?: string;
   user_agent?: string;
   created_at: string;
-  profiles?: {
-    full_name: string;
-    email: string;
-  };
+  profiles?: { full_name: string; email: string };
 }
 
 export interface CreateActivityData {
@@ -38,24 +35,15 @@ export const useActivityLog = () => {
   const fetchActivities = async (limit = 50) => {
     try {
       setLoading(true);
-      
-      // Use raw SQL query to avoid type issues with new table
       const { data, error } = await supabase
-        .rpc('get_activity_logs', { log_limit: limit });
-
-      if (error) {
-        console.error('Error fetching activities:', error);
-        return;
-      }
-
-      setActivities(data || []);
+        .from('activity_logs')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(limit);
+      if (error) throw error;
+      setActivities((data as unknown as ActivityLog[]) || []);
     } catch (error) {
       console.error('Error fetching activities:', error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch activity logs. Please try again.",
-        variant: "destructive",
-      });
     } finally {
       setLoading(false);
     }
@@ -63,24 +51,18 @@ export const useActivityLog = () => {
 
   const logActivity = async (activityData: CreateActivityData): Promise<boolean> => {
     if (!user) return false;
-
     try {
-      // Use a simpler approach to log activities for now
-      const activityEntry = {
+      const { error } = await supabase.from('activity_logs').insert({
         user_id: user.id,
-        tenant_id: (user as any).tenantId || 'default-tenant',
+        tenant_id: user.tenantId || '',
         module: activityData.module,
         action: activityData.action,
         resource_type: activityData.resource_type || null,
         resource_id: activityData.resource_id || null,
         metadata: activityData.metadata || {},
         user_agent: navigator.userAgent,
-      };
-
-      console.log('Logging activity:', activityEntry);
-      
-      // For now, just return true and log to console
-      // This will be updated when the types are properly generated
+      });
+      if (error) throw error;
       return true;
     } catch (error) {
       console.error('Error logging activity:', error);
@@ -88,56 +70,19 @@ export const useActivityLog = () => {
     }
   };
 
-  const getRecentActivities = async (userId?: string, module?: string): Promise<ActivityLog[]> => {
+  const getRecentActivities = async (): Promise<ActivityLog[]> => {
     try {
-      // Mock data for now until types are properly generated
-      const mockActivities: ActivityLog[] = [
-        {
-          id: '1',
-          user_id: user?.id || '',
-          tenant_id: 'default',
-          module: 'students',
-          action: 'create',
-          resource_type: 'student',
-          created_at: new Date().toISOString(),
-          profiles: {
-            full_name: user?.fullName || 'Unknown User',
-            email: user?.email || 'unknown@example.com'
-          }
-        },
-        {
-          id: '2',
-          user_id: user?.id || '',
-          tenant_id: 'default',
-          module: 'dashboard',
-          action: 'view',
-          created_at: new Date(Date.now() - 3600000).toISOString(),
-          profiles: {
-            full_name: user?.fullName || 'Unknown User',
-            email: user?.email || 'unknown@example.com'
-          }
-        }
-      ];
-
-      return mockActivities;
-    } catch (error) {
-      console.error('Error fetching recent activities:', error);
+      const { data, error } = await supabase
+        .from('activity_logs')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(10);
+      if (error) throw error;
+      return (data as unknown as ActivityLog[]) || [];
+    } catch {
       return [];
     }
   };
 
-  useEffect(() => {
-    if (user) {
-      // For now, don't fetch activities until types are properly generated
-      // fetchActivities();
-    }
-  }, [user]);
-
-  return {
-    activities,
-    loading,
-    logActivity,
-    getRecentActivities,
-    refetch: fetchActivities,
-  };
+  return { activities, loading, logActivity, getRecentActivities, refetch: fetchActivities };
 };
