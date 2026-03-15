@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 // Debounce hook for performance optimization
 export const useDebounce = (callback: (...args: any[]) => void, delay: number) => {
-  const timeoutRef = useRef<NodeJS.Timeout>();
+  const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
   return useCallback((...args: any[]) => {
     if (timeoutRef.current) {
@@ -62,7 +62,7 @@ export const useOptimizedQueries = () => {
     return queryWithCache(
       `students_${tenantId}_${limit}`,
       async () => {
-        const { data, error } = await supabase
+        const { data, error } = await (supabase as any)
           .from('students')
           .select('id, full_name, email, roll_number, is_active')
           .eq('tenant_id', tenantId)

@@ -3,6 +3,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useTenant } from './useTenant';
 import { toast } from 'sonner';
 
+const db = supabase as any;
+
 export interface Integration {
   id: string;
   tenant_id: string;
@@ -39,7 +41,7 @@ export const useIntegrations = () => {
     if (!tenant?.id) return;
 
     try {
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from('integrations')
         .select('*')
         .eq('tenant_id', tenant.id)
@@ -58,7 +60,7 @@ export const useIntegrations = () => {
     if (!tenant?.id) return;
 
     try {
-      let query = supabase
+      let query = db
         .from('integration_logs')
         .select('*')
         .eq('tenant_id', tenant.id)
@@ -84,7 +86,7 @@ export const useIntegrations = () => {
     if (!tenant?.id) return null;
 
     try {
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from('integrations')
         .upsert({
           tenant_id: tenant.id,
@@ -113,7 +115,7 @@ export const useIntegrations = () => {
   // Enable/disable integration
   const toggleIntegration = async (integrationId: string, enabled: boolean) => {
     try {
-      const { error } = await supabase
+      const { error } = await db
         .from('integrations')
         .update({ enabled })
         .eq('id', integrationId);
@@ -131,7 +133,7 @@ export const useIntegrations = () => {
   // Delete integration
   const deleteIntegration = async (integrationId: string) => {
     try {
-      const { error } = await supabase
+      const { error } = await db
         .from('integrations')
         .delete()
         .eq('id', integrationId);
@@ -163,7 +165,7 @@ export const useIntegrations = () => {
       const healthStatus = data.success ? 'healthy' : 'error';
 
       // Update health status
-      await supabase
+      await db
         .from('integrations')
         .update({
           health_status: healthStatus,

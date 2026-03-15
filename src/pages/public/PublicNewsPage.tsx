@@ -39,7 +39,7 @@ export const PublicNewsPage: React.FC = () => {
     if (!tenant) return;
 
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('blog_posts')
         .select(`
           *,

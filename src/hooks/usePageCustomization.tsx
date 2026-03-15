@@ -4,6 +4,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTenant } from '@/hooks/useTenant';
 import { toast } from 'sonner';
 
+const db = supabase as any;
+
 export interface PageSection {
   id: string;
   type: string;
@@ -58,7 +60,7 @@ export function usePageCustomization() {
   const { data: pageTemplates, isLoading: templatesLoading } = useQuery({
     queryKey: ['page-templates'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from('page_templates')
         .select('*')
         .order('page_slug');
@@ -72,7 +74,7 @@ export function usePageCustomization() {
   const { data: sectionTemplates, isLoading: sectionsLoading } = useQuery({
     queryKey: ['page-sections'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from('page_sections')
         .select('*')
         .order('section_name');
@@ -88,7 +90,7 @@ export function usePageCustomization() {
     queryFn: async () => {
       if (!tenant?.id) return [];
       
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from('page_customizations')
         .select('*')
         .eq('tenant_id', tenant.id)
@@ -104,7 +106,7 @@ export function usePageCustomization() {
   const getPageCustomization = async (pageSlug: string) => {
     if (!tenant?.id) return null;
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .rpc('get_page_customization', {
         p_tenant_id: tenant.id,
         p_page_slug: pageSlug
@@ -127,7 +129,7 @@ export function usePageCustomization() {
     }) => {
       if (!tenant?.id || !user?.id) throw new Error('Unauthorized');
 
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from('page_customizations')
         .upsert({
           tenant_id: tenant.id,
@@ -160,7 +162,7 @@ export function usePageCustomization() {
     mutationFn: async (pageSlug: string) => {
       if (!tenant?.id) throw new Error('Unauthorized');
 
-      const { error } = await supabase
+      const { error } = await db
         .from('page_customizations')
         .delete()
         .eq('tenant_id', tenant.id)
@@ -187,7 +189,7 @@ export function usePageCustomization() {
       // For now, we'll just store the file info
       const fileUrl = URL.createObjectURL(file);
       
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from('file_uploads')
         .insert({
           tenant_id: tenant.id,

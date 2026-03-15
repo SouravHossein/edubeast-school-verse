@@ -1,11 +1,14 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import type { User as SupabaseUser, Session } from '@supabase/supabase-js';
 
 export interface User {
   id: string;
   email: string;
   fullName: string;
   role: 'admin' | 'teacher' | 'student' | 'parent';
+  tenantId?: string;
   studentId?: string;
   avatar?: string;
   permissions?: string[];
@@ -13,9 +16,10 @@ export interface User {
 
 interface AuthContextType {
   user: User | null;
+  session: Session | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (email: string, password: string, role: string) => Promise<boolean>;
+  login: (email: string, password: string, role?: string) => Promise<boolean>;
   register: (data: RegisterData) => Promise<boolean>;
   logout: () => void;
   updateUser: (updates: Partial<User>) => void;
@@ -31,138 +35,127 @@ interface RegisterData {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const getRolePermissions = (role: User['role']): string[] => {
+  const permissions: Record<string, string[]> = {
+    admin: ['all'],
+    teacher: ['view_students', 'manage_grades', 'view_reports', 'manage_assignments'],
+    student: ['view_grades', 'view_assignments', 'submit_assignments'],
+    parent: ['view_child_progress', 'view_announcements', 'communicate_teachers'],
+  };
+  return permissions[role] || [];
+};
+
+const mapProfile = (supabaseUser: SupabaseUser, profile: any): User => ({
+  id: supabaseUser.id,
+  email: supabaseUser.email || '',
+  fullName: profile?.full_name || supabaseUser.user_metadata?.full_name || '',
+  role: profile?.role || supabaseUser.user_metadata?.role || 'admin',
+  tenantId: profile?.tenant_id || undefined,
+  avatar: profile?.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${supabaseUser.email}`,
+  permissions: getRolePermissions(profile?.role || 'admin'),
+});
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
-    // Check for existing session on app start
-    const checkAuth = () => {
-      const savedUser = localStorage.getItem('edubeast-user');
-      if (savedUser) {
-        try {
-          const userData = JSON.parse(savedUser);
-          setUser(userData);
-        } catch (error) {
-          console.error('Error parsing saved user data:', error);
-          localStorage.removeItem('edubeast-user');
-        }
-      }
-      setIsLoading(false);
-    };
+    // Set up listener BEFORE getSession
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, newSession) => {
+      setSession(newSession);
 
-    checkAuth();
+      if (newSession?.user) {
+        // Use setTimeout to avoid potential deadlock with Supabase client
+        setTimeout(async () => {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('user_id', newSession.user.id)
+            .single();
+
+          setUser(mapProfile(newSession.user, profile));
+          setIsLoading(false);
+        }, 0);
+      } else {
+        setUser(null);
+        setIsLoading(false);
+      }
+    });
+
+    supabase.auth.getSession().then(({ data: { session: existingSession } }) => {
+      if (!existingSession) {
+        setIsLoading(false);
+      }
+      // onAuthStateChange will handle the rest
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  const login = async (email: string, password: string, role: string): Promise<boolean> => {
-    setIsLoading(true);
-    
-    // Simulate API call - replace with actual authentication
+  const login = async (email: string, password: string, _role?: string): Promise<boolean> => {
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Mock successful login
-      const mockUser: User = {
-        id: `${role}-${Date.now()}`,
-        email,
-        fullName: `${role.charAt(0).toUpperCase()}${role.slice(1)} User`,
-        role: role as User['role'],
-        avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${email}`,
-        permissions: getRolePermissions(role as User['role'])
-      };
-
-      setUser(mockUser);
-      localStorage.setItem('edubeast-user', JSON.stringify(mockUser));
-      
-      toast({
-        title: "Login Successful",
-        description: `Welcome back, ${mockUser.fullName}!`,
-      });
-
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        toast({ title: 'Login Failed', description: error.message, variant: 'destructive' });
+        return false;
+      }
+      toast({ title: 'Login Successful', description: 'Welcome back!' });
       return true;
-    } catch (error) {
-      toast({
-        title: "Login Failed",
-        description: "Invalid credentials. Please try again.",
-        variant: "destructive",
-      });
+    } catch {
+      toast({ title: 'Login Failed', description: 'An unexpected error occurred.', variant: 'destructive' });
       return false;
-    } finally {
-      setIsLoading(false);
     }
   };
 
   const register = async (data: RegisterData): Promise<boolean> => {
-    setIsLoading(true);
-    
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const newUser: User = {
-        id: `${data.role}-${Date.now()}`,
+      const { error } = await supabase.auth.signUp({
         email: data.email,
-        fullName: data.fullName,
-        role: data.role,
-        studentId: data.studentId,
-        avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${data.email}`,
-        permissions: getRolePermissions(data.role)
-      };
-
-      setUser(newUser);
-      localStorage.setItem('edubeast-user', JSON.stringify(newUser));
-      
-      toast({
-        title: "Registration Successful",
-        description: `Welcome to EduBeast, ${newUser.fullName}!`,
+        password: data.password,
+        options: {
+          emailRedirectTo: window.location.origin,
+          data: {
+            full_name: data.fullName,
+            role: data.role,
+          },
+        },
       });
 
+      if (error) {
+        toast({ title: 'Registration Failed', description: error.message, variant: 'destructive' });
+        return false;
+      }
+
+      toast({ title: 'Registration Successful', description: `Welcome to EduBeast, ${data.fullName}!` });
       return true;
-    } catch (error) {
-      toast({
-        title: "Registration Failed",
-        description: "Something went wrong. Please try again.",
-        variant: "destructive",
-      });
+    } catch {
+      toast({ title: 'Registration Failed', description: 'Something went wrong.', variant: 'destructive' });
       return false;
-    } finally {
-      setIsLoading(false);
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    await supabase.auth.signOut();
     setUser(null);
-    localStorage.removeItem('edubeast-user');
-    toast({
-      title: "Logged Out",
-      description: "You have been successfully logged out.",
-    });
+    setSession(null);
+    toast({ title: 'Logged Out', description: 'You have been successfully logged out.' });
   };
 
   const updateUser = (updates: Partial<User>) => {
     if (user) {
-      const updatedUser = { ...user, ...updates };
-      setUser(updatedUser);
-      localStorage.setItem('edubeast-user', JSON.stringify(updatedUser));
+      setUser({ ...user, ...updates });
     }
-  };
-
-  const getRolePermissions = (role: User['role']): string[] => {
-    const permissions = {
-      admin: ['all'],
-      teacher: ['view_students', 'manage_grades', 'view_reports', 'manage_assignments'],
-      student: ['view_grades', 'view_assignments', 'submit_assignments'],
-      parent: ['view_child_progress', 'view_announcements', 'communicate_teachers']
-    };
-    return permissions[role] || [];
   };
 
   return (
     <AuthContext.Provider
       value={{
         user,
+        session,
         isLoading,
-        isAuthenticated: !!user,
+        isAuthenticated: !!user && !!session,
         login,
         register,
         logout,
