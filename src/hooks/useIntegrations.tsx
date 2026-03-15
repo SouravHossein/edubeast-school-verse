@@ -41,7 +41,7 @@ export const useIntegrations = () => {
     if (!tenant?.id) return;
 
     try {
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from('integrations')
         .select('*')
         .eq('tenant_id', tenant.id)
