@@ -129,7 +129,7 @@ export function usePageCustomization() {
     }) => {
       if (!tenant?.id || !user?.id) throw new Error('Unauthorized');
 
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from('page_customizations')
         .upsert({
           tenant_id: tenant.id,
